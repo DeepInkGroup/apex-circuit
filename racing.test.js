@@ -7,6 +7,11 @@ for(const level of ['rookie','club','pro'])test('AI '+level+' finishes a clean t
   assert.equal(race.status,'finished');assert.equal(race.players.length,4);
   for(const p of race.players){assert.equal(p.lap,3,p.name+' completes every lap');assert.equal(p.dnf,false);assert.equal(p.penalty,0,p.name+' stays within track limits');assert.ok(p.finish>0);}
 });
+for(const trackId of ['alpine','sunset'])test('AI field completes three clean laps at '+trackId,()=>{
+  const race=R.createSprint('Tester','club',3,trackId);for(let i=0;i<24000&&race.status!=='finished';i++)R.stepSprint(race,R.input(race.players[0],'club'),1/60);
+  assert.equal(race.status,'finished');assert.equal(race.trackId,trackId);for(const p of race.players){assert.equal(p.lap,3,p.name+' finishes');assert.equal(p.trackId,trackId);assert.equal(p.penalty,0,p.name+' has no limits penalty');}
+});
+test('race distance accepts one through twenty laps and clamps other values',()=>{assert.equal(R.createSprint('A','club',1).laps,1);assert.equal(R.createSprint('A','club',10).laps,10);assert.equal(R.createSprint('A','club',20).laps,20);assert.equal(R.createSprint('A','club',99).laps,20);});
 test('countdown freezes grid, recovery invalidates a lap, and timed-out drivers are DNF',()=>{
   const race=R.createSprint();const x=race.players[0].x;
   for(let i=0;i<100;i++)R.stepSprint(race,{up:true},1/60);assert.equal(race.players[0].x,x);assert.equal(race.status,'countdown');

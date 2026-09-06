@@ -3,12 +3,14 @@ const {test}=require('node:test'),assert=require('node:assert/strict'),{spawn}=r
 const P=require('./public/physics');
 function place(p,s,now){const loc=P.at(s);p.x=loc.x;p.y=loc.y;p.angle=loc.angle;P.step(p,{},0,now);}
 function driveDistance(p,from,to,start=1000){for(let s=from;s<=to;s+=8)place(p,s,start+s*10);place(p,to,start+to*10);}
-test('track is closed, road has room around corners, and grid is on asphalt',()=>{
-  const a=P.at(0),b=P.at(P.LENGTH);assert.ok(Math.hypot(a.x-b.x,a.y-b.y)<.001);
-  for(let i=0;i<8;i++){const p=P.spawn(i);assert.ok(P.nearest(p.x,p.y).distance<P.ROAD/2);}
-  let gap=Infinity;const pts=P.points;
-  for(let i=0;i<pts.length;i++)for(let j=i+26;j<pts.length;j++){if(pts.length-j+i<26)continue;gap=Math.min(gap,Math.hypot(pts[i].x-pts[j].x,pts[i].y-pts[j].y));}
-  assert.ok(gap>P.ROAD,'Road overlaps itself: '+gap);
+test('all circuits are closed, separated, bounded, and have asphalt grids',()=>{
+  assert.deepEqual(Object.keys(P.tracks),['harbor','alpine','sunset']);
+  for(const [id,track] of Object.entries(P.tracks)){
+    const a=P.at(0,id),b=P.at(track.length,id);assert.ok(Math.hypot(a.x-b.x,a.y-b.y)<.001,id+' closes');
+    for(let i=0;i<8;i++){const p=P.spawn(i,id);assert.equal(p.trackId,id);assert.ok(P.nearest(p.x,p.y,id).distance<track.road/2);}
+    let gap=Infinity,pts=track.points;for(let i=0;i<pts.length;i++)for(let j=i+28;j<pts.length;j++){if(pts.length-j+i<=28)continue;gap=Math.min(gap,Math.hypot(pts[i].x-pts[j].x,pts[i].y-pts[j].y));}
+    assert.ok(gap>track.road,id+' road overlaps itself: '+gap);assert.ok(pts.every(p=>p.x>60&&p.x<1740&&p.y>55&&p.y<1045),id+' stays on canvas');
+  }
 });
 test('full forward route awards a lap, three sectors, and a clean best',()=>{
   const p=P.spawn();driveDistance(p,-22,P.LENGTH+10);
@@ -23,6 +25,12 @@ test('grass excursion invalidates best, and recovery keeps progress without a sh
   const p=P.spawn();driveDistance(p,-22,100);const loc=P.at(100);p.x=loc.x+loc.nx*100;p.y=loc.y+loc.ny*100;P.step(p,{},0,3000);assert.equal(p.valid,false);
   const before=p.progress;assert.equal(P.recover(p,5000),true);assert.equal(p.recoveries,1);assert.equal(P.recover(p,5500),false);assert.ok(Math.abs(p.progress-before)<1);
   driveDistance(p,100,P.LENGTH+10,6000);assert.equal(p.lap,1);assert.equal(p.lastValid,false);assert.equal(p.best,null);
+});
+test('sustained track-limit violation adds one 3-second penalty until clean re-entry',()=>{
+  const p=P.spawn(),loc=P.at(300);p.x=loc.x+loc.nx*(P.ROAD/2+30);p.y=loc.y+loc.ny*(P.ROAD/2+30);
+  for(let i=0;i<30;i++)P.step(p,{},1/60,1000+i*17);assert.equal(p.trackLimits,1);assert.equal(p.penalty,3000);assert.equal(p.valid,false);
+  for(let i=0;i<30;i++)P.step(p,{},1/60,2000+i*17);assert.equal(p.penalty,3000);
+  p.x=loc.x;p.y=loc.y;for(let i=0;i<10;i++)P.step(p,{},1/60,3000+i*17);p.x=loc.x+loc.nx*(P.ROAD/2+30);p.y=loc.y+loc.ny*(P.ROAD/2+30);for(let i=0;i<30;i++)P.step(p,{},1/60,4000+i*17);assert.equal(p.penalty,6000);assert.equal(p.trackLimits,2);
 });
 test('braking, progressive steering, rear slip, grip and frozen finish',()=>{
   const p=P.spawn();for(let i=0;i<90;i++)P.step(p,{up:true},1/60,1000+i*1000/60);
@@ -44,7 +52,7 @@ test('multiplayer: room settings, stream, authority, start, movement, recovery, 
   const health=await(await fetch(base+'/health')).json();assert.equal(health.version,P.VERSION);
   for(const file of ['/','/renderer.js','/physics.js','/game.js','/style.css'])assert.equal((await fetch(base+file)).status,200);
   assert.equal((await fetch(base+'/constructor')).status,404);
-  const host=(await api('host',{name:'Host',laps:5})).data;assert.equal(host.room.laps,5);assert.match(host.room.code,/^[A-F0-9]{6}$/);
+  const host=(await api('host',{name:'Host',laps:10,trackId:'alpine'})).data;assert.equal(host.room.laps,10);assert.equal(host.room.trackId,'alpine');assert.ok(host.room.players.every(p=>p.trackId==='alpine'));assert.match(host.room.code,/^[A-F0-9]{6}$/);
   const guest=(await api('join',{name:'Guest',code:host.room.code.toLowerCase()})).data;assert.equal(guest.room.players.length,2);
   assert.equal((await api('join',{code:'XXXXXX'})).status,404);assert.equal((await api('start',{token:guest.token})).status,403);assert.equal((await api('recover',{token:host.token})).status,409);
   const abort=new AbortController();t.after(()=>abort.abort());const stream=await fetch(base+'/events?token='+host.token,{signal:abort.signal});const reader=stream.body.getReader(),decoder=new TextDecoder();let pending='';

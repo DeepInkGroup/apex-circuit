@@ -5,9 +5,9 @@ const rooms=new Map(),sessions=new Map(),PORT=Number(process.env.PORT)||3000;
 const allowedOrigins=new Set((process.env.ALLOWED_ORIGINS||'https://deepinkgroup.github.io').split(',').map(s=>s.trim()).filter(Boolean));
 const colors=['#b7f76b','#67d9ff','#ff826f','#ffc75b','#c09cff','#ffffff','#64ffc9','#ee91df'];
 function send(res,status,data){res.writeHead(status,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(JSON.stringify(data));}
-function snapshot(r){return {code:r.code,host:r.host,status:r.status,start:r.start,laps:r.laps,now:Date.now(),track:P.VERSION,players:[...r.players.values()].map(({token,input,stream,seen,...p})=>p)};}
+function snapshot(r){return {code:r.code,host:r.host,status:r.status,start:r.start,laps:r.laps,trackId:r.trackId,now:Date.now(),engine:P.VERSION,players:[...r.players.values()].map(({token,input,stream,seen,...p})=>p)};}
 function remove(p){const r=rooms.get(p.code);p.stream?.end();sessions.delete(p.token);if(!r)return;r.players.delete(p.id);if(!r.players.size)rooms.delete(r.code);else if(r.host===p.id)r.host=r.players.keys().next().value;}
-function resetCars(r){let i=0;for(const p of r.players.values())Object.assign(p,P.spawn(i++),{input:{},penalty:0});}
+function resetCars(r){let i=0;for(const p of r.players.values())Object.assign(p,P.spawn(i++,r.trackId),{input:{}});}
 const server=http.createServer(async(req,res)=>{
   try {
     const url=new URL(req.url,'http://localhost');
@@ -19,7 +19,7 @@ const server=http.createServer(async(req,res)=>{
       if(permitted){res.setHeader('Access-Control-Allow-Origin',origin);res.setHeader('Vary','Origin');res.setHeader('Access-Control-Allow-Methods','GET, POST, OPTIONS');res.setHeader('Access-Control-Allow-Headers','Content-Type');}
     }
     if(req.method==='OPTIONS'){res.writeHead(204);return res.end();}
-    if(url.pathname==='/health')return send(res,200,{app:'apex-circuit',version:P.VERSION,release:'3.0.0',protocol:3,rooms:rooms.size});
+    if(url.pathname==='/health')return send(res,200,{app:'apex-circuit',version:P.VERSION,release:'4.0.0',protocol:4,tracks:Object.keys(P.tracks),rooms:rooms.size});
     if(url.pathname==='/events'){
       const p=sessions.get(url.searchParams.get('token'));
       if(!p)return send(res,401,{error:'Session expired. Join again.'});
@@ -37,7 +37,8 @@ const server=http.createServer(async(req,res)=>{
         if(action==='host'){
           if(rooms.size>=100)return send(res,503,{error:'Server full'});
           let code;do{code=crypto.randomBytes(3).toString('hex').toUpperCase();}while(rooms.has(code));
-          r={code,players:new Map(),status:'lobby',start:0,laps:[3,5].includes(Number(data.laps))?Number(data.laps):3};rooms.set(code,r);
+          const trackId=P.tracks[data.trackId]?data.trackId:'harbor',laps=Math.max(1,Math.min(20,Math.round(Number(data.laps)||3)));
+          r={code,players:new Map(),status:'lobby',start:0,laps,trackId};rooms.set(code,r);
         }else{
           r=rooms.get(String(data.code).trim().toUpperCase());
           if(!r)return send(res,404,{error:'Room not found. Check the code.'});
@@ -46,7 +47,7 @@ const server=http.createServer(async(req,res)=>{
         }
         const token=crypto.randomBytes(24).toString('hex'),id=crypto.randomBytes(6).toString('hex');
         const used=new Set([...r.players.values()].map(p=>p.color));
-        const p={...P.spawn(r.players.size),id,token,code:r.code,name:String(data.name||'Driver').trim().slice(0,18)||'Driver',color:colors.find(c=>!used.has(c))||colors[0],input:{},penalty:0,seen:Date.now()};
+        const p={...P.spawn(r.players.size,r.trackId),id,token,code:r.code,name:String(data.name||'Driver').trim().slice(0,18)||'Driver',color:colors.find(c=>!used.has(c))||colors[0],input:{},seen:Date.now()};
         r.players.set(id,p);sessions.set(token,p);r.host??=id;
         return send(res,200,{token,id,room:snapshot(r)});
       }
@@ -84,8 +85,7 @@ setInterval(()=>{
       for(const p of r.players.values()){
         if(Date.now()-p.seen>30000){remove(p);continue;}
         if(r.status==='racing'&&now>=r.start){
-          const lap=p.lap;P.step(p,now-p.seen<600?p.input:{},1/60,now);
-          if(p.lap>lap&&!p.lastValid)p.penalty+=5000;
+          P.step(p,now-p.seen<600?p.input:{},1/60,now);
           if(p.lap>=r.laps){p.finished=true;p.speed=0;p.vx=p.vy=0;p.finish??=now-r.start+p.penalty;}
         }
       }
