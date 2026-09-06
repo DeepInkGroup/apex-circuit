@@ -1,0 +1,10 @@
+node_modules/
+*.log
+.browser-test/
+artifacts/
+dist/
+backups/
+.env
+.env.*
+!.env.example
+*.zip

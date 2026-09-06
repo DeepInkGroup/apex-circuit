@@ -1,0 +1,38 @@
+/* Offline rivals use the same physics and track limits as human drivers. */
+(function(root){
+  'use strict';
+  const P=typeof module!=='undefined'?require('./physics'):root.Physics;
+  const levels={rookie:{corner:120,max:220},club:{corner:170,max:270},pro:{corner:195,max:285}};
+  function input(car,difficulty='club',index=0){
+    const setup=levels[difficulty]||levels.club,n=P.nearest(car.x,car.y);
+    const target=P.at(n.s+35+Math.abs(car.speed)*.22),desired=Math.atan2(target.y-car.y,target.x-car.x);
+    const error=Math.atan2(Math.sin(desired-car.angle),Math.cos(desired-car.angle));
+    let curvature=0;
+    for(let d=0;d<180;d+=20){const a=P.at(n.s+d),b=P.at(n.s+d+25);curvature=Math.max(curvature,Math.abs(Math.atan2(Math.sin(b.angle-a.angle),Math.cos(b.angle-a.angle)))/25);}
+    const pace=[.96,1,1.025][index%3];
+    const targetSpeed=Math.max(52,Math.min(setup.max,Math.sqrt(setup.corner/Math.max(.001,curvature))))*pace;
+    return {up:car.speed<targetSpeed,down:car.speed>targetSpeed+12,right:error>.025,left:error<-.025};
+  }
+  function createSprint(name='Driver',difficulty='club',laps=3){
+    const names=[name,'Mika','Jules','Nova'],colors=['#b7f76b','#67d9ff','#ff826f','#c09cff'];
+    return {status:'countdown',clock:0,start:3000,firstFinish:null,laps:[3,5].includes(laps)?laps:3,difficulty:levels[difficulty]?difficulty:'club',players:names.map((name,i)=>({...P.spawn(i),id:i===0?'local':'ai-'+i,name,color:colors[i],penalty:0,ai:i>0,dnf:false}))};
+  }
+  function stepSprint(race,keys,dt){
+    if(race.status==='finished')return;
+    dt=Math.min(.05,Math.max(0,dt));race.clock+=dt*1000;
+    if(race.clock<race.start)return;
+    race.status='racing';
+    race.players.forEach((car,i)=>{
+      if(car.finished)return;
+      const lap=car.lap;P.step(car,i?input(car,race.difficulty,i-1):keys,dt,race.clock);
+      if(car.lap>lap&&!car.lastValid)car.penalty+=5000;
+      if(car.lap>=race.laps){car.finished=true;car.vx=car.vy=car.speed=0;car.finish=race.clock-race.start+car.penalty;race.firstFinish??=race.clock;}
+    });
+    if(race.firstFinish!==null&&race.clock-race.firstFinish>45000){for(const p of race.players)if(!p.finished){p.dnf=true;p.finished=true;p.vx=p.vy=p.speed=0;}}
+    if(race.players.every(p=>p.finished))race.status='finished';
+  }
+  function standings(players){return [...players].sort((a,b)=>a.dnf!==b.dnf?(a.dnf?1:-1):a.finished&&b.finished?(a.finish??Infinity)-(b.finish??Infinity):a.finished?-1:b.finished?1:b.progress-a.progress);}
+  function medal(time){return time==null?null:time<=42000?'GOLD':time<=50000?'SILVER':time<=65000?'BRONZE':null;}
+  const api={input,createSprint,stepSprint,standings,medal};
+  if(typeof module!=='undefined')module.exports=api;else root.Racing=api;
+})(typeof window==='undefined'?globalThis:window);

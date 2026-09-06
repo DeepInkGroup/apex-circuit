@@ -1,0 +1,42 @@
+// Development-only end-to-end checks using Edge's local debugging protocol.
+const {spawn}=require('node:child_process'),fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
+const pause=ms=>new Promise(r=>setTimeout(r,ms));
+const root=__dirname,artifacts=path.join(root,'artifacts');fs.mkdirSync(artifacts,{recursive:true});
+const server=spawn(process.execPath,['server.js'],{cwd:root,env:{...process.env,PORT:'3100'},windowsHide:true,stdio:'ignore'});
+const browser=spawn('C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',['--headless','--disable-gpu','--no-first-run','--no-default-browser-check','--remote-debugging-port=9235','--user-data-dir='+path.join(root,'.browser-test'),'about:blank'],{windowsHide:true,stdio:'ignore'});
+let ws,id=0;const pending=new Map(),errors=[];
+function rpc(method,params={},sessionId){return new Promise((resolve,reject)=>{const n=++id;const timer=setTimeout(()=>{pending.delete(n);reject(new Error('CDP timeout '+method));},12000);pending.set(n,{resolve,reject,timer});ws.send(JSON.stringify({id:n,method,params,sessionId}));});}
+async function evaluate(session,expression){const r=await rpc('Runtime.evaluate',{expression,returnByValue:true,awaitPromise:true},session);if(r.exceptionDetails)throw new Error(JSON.stringify(r.exceptionDetails));return r.result.value;}
+async function until(fn,label){for(let i=0;i<80;i++){if(await fn())return;await pause(100);}throw new Error('Timeout: '+label);}
+async function tab(width=1440,height=1100){const {targetId}=await rpc('Target.createTarget',{url:'about:blank'});const {sessionId}=await rpc('Target.attachToTarget',{targetId,flatten:true});await rpc('Runtime.enable',{},sessionId);await rpc('Page.enable',{},sessionId);await rpc('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<600},sessionId);await rpc('Page.navigate',{url:'http://127.0.0.1:3100'},sessionId);await until(()=>evaluate(sessionId,"typeof local!=='undefined' && !!document.getElementById('speed').textContent"),'page ready');return sessionId;}
+async function screenshot(session,name){const result=await rpc('Page.captureScreenshot',{format:'png',captureBeyondViewport:false},session);fs.writeFileSync(path.join(artifacts,name),Buffer.from(result.data,'base64'));}
+(async()=>{
+  try{
+    let endpoint;await until(async()=>{try{endpoint=await(await fetch('http://127.0.0.1:9235/json/version')).json();return true;}catch{return false;}},'Edge launch');
+    ws=new WebSocket(endpoint.webSocketDebuggerUrl);await new Promise((r,j)=>{ws.onopen=r;ws.onerror=j;});ws.onmessage=e=>{const m=JSON.parse(e.data);if(m.id){const p=pending.get(m.id);if(p){clearTimeout(p.timer);pending.delete(m.id);m.error?p.reject(new Error(m.error.message)):p.resolve(m.result);}}else if(m.method==='Runtime.exceptionThrown')errors.push(m.params.exceptionDetails);};
+    const solo=await tab();await pause(300);await screenshot(solo,'desktop.png');
+    await evaluate(solo,"$('camera-toggle').click()");assert.equal(await evaluate(solo,'follow'),true);await pause(200);await screenshot(solo,'follow-camera.png');await evaluate(solo,"$('camera-toggle').click()");
+    await rpc('Runtime.evaluate',{expression:"$('sound-toggle').click()",userGesture:true},solo);await until(()=>evaluate(solo,"sound && audio.context.state==='running'"),'engine audio');await evaluate(solo,"$('sound-toggle').click()");
+    await rpc('Input.dispatchKeyEvent',{type:'keyDown',key:'w',code:'KeyW'},solo);await pause(900);assert.ok(await evaluate(solo,'local.speed>100'),'keyboard accelerates');
+    await rpc('Input.dispatchKeyEvent',{type:'keyDown',key:'d',code:'KeyD'},solo);await pause(200);assert.ok(await evaluate(solo,'local.steer>.1'),'progressive steering responds');
+    await rpc('Input.dispatchKeyEvent',{type:'keyDown',key:' ',code:'Space'},solo);await pause(150);assert.ok(await evaluate(solo,'local.grip<1'),'handbrake changes grip');
+    for(const [key,code]of[['w','KeyW'],['d','KeyD'],[' ','Space']])await rpc('Input.dispatchKeyEvent',{type:'keyUp',key,code},solo);
+    await evaluate(solo,"document.getElementById('restart').click();document.getElementById('line-toggle').click();document.getElementById('ghost-toggle').click()");assert.equal(await evaluate(solo,'guide'),false);assert.equal(await evaluate(solo,'ghostEnabled'),false);
+    // Feed a completed route through the real timing/recording pipeline to test ghost persistence.
+    await evaluate(solo,`(() => { practice();const original=Physics.step;let distance=-22;Physics.step=(p,input,dt,now)=>{distance+=5;const loc=Physics.at(distance);p.x=loc.x;p.y=loc.y;p.angle=loc.angle;original(p,{},0,now);};for(let i=0;i<Math.ceil(Physics.LENGTH/5)+12;i++)simulate(1/60);Physics.step=original;})()`);
+    assert.ok(await evaluate(solo,'personal && personal.frames.length>10 && local.lap===1'),'clean lap records a ghost');
+    assert.ok(await evaluate(solo,'JSON.parse(localStorage.getItem(STORAGE)).best>0'),'ghost persists');
+    await evaluate(solo,"document.getElementById('ghost-toggle').click()");assert.ok(await evaluate(solo,'ghostAt(1000)!==null'),'ghost can replay');
+    const mobile=await tab(390,844);assert.ok(await evaluate(mobile,'document.documentElement.scrollWidth<=390'),'mobile fits viewport');assert.equal(await evaluate(mobile,"getComputedStyle(document.querySelector('.touch')).display"),'flex');assert.equal(await evaluate(mobile,'follow'),true);await screenshot(mobile,'mobile.png');
+    await rpc('Emulation.setTouchEmulationEnabled',{enabled:true},mobile);const gas=await evaluate(mobile,"(()=>{const r=document.querySelector('[data-key=up]').getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2};})()");await rpc('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:gas.x,y:gas.y}]},mobile);await pause(600);assert.ok(await evaluate(mobile,'local.speed>45'),'touch throttle accelerates');await rpc('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]},mobile);assert.equal(await evaluate(mobile,'!!keys.up'),false,'touch release stops input');
+    await evaluate(solo,"$('name').value='Host';$('race-laps').value='5';$('host').click()");await until(()=>evaluate(solo,'session!==null'),'host');const code=await evaluate(solo,'room.code');
+    await evaluate(mobile,"$('name').value='Guest';$('code').value="+JSON.stringify(code)+";$('join').click()");await until(()=>evaluate(solo,'room.players.length===2'),'join visible');
+    await evaluate(solo,"$('start').click()");await until(()=>evaluate(mobile,"room.status==='racing'"),'race stream');assert.equal(await evaluate(mobile,'room.laps'),5);await screenshot(solo,'multiplayer.png');
+    await pause(3200);await evaluate(mobile,'keys.up=true');await pause(600);assert.ok(await evaluate(solo,"room.players.find(p=>p.name==='Guest').speed>20"),'remote movement visible');await evaluate(mobile,'clearKeys()');
+    await evaluate(solo,"$('reset').click()");await until(()=>evaluate(mobile,"room.status==='lobby'"),'reset');
+    await evaluate(solo,"$('leave').click()");await until(()=>evaluate(mobile,'room.host===session.id'),'host transfer');
+    assert.deepEqual(errors,[],'no browser runtime errors');
+    console.log('PASS: desktop render, driving, steering, handbrake, toggles, ghost record/replay/storage, mobile layout, host/join, 5-lap countdown, remote movement, reset and host transfer.');
+    console.log('Screenshots: '+artifacts);
+  } finally {try{if(ws?.readyState===1)await rpc('Browser.close');}catch{}ws?.close();server.kill();browser.kill();}
+})().catch(e=>{console.error(e);process.exitCode=1;});
