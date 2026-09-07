@@ -1,6 +1,6 @@
 # Deep Racing — Race Hub
 
-A self-contained browser racing game with eleven circuits, an intelligent race engineer, solo practice, AI races, and multiplayer rooms for up to eight drivers. No external assets, API keys, or runtime npm dependencies.
+A self-contained browser racing game with twelve circuits, an intelligent race engineer, solo practice, AI races, qualifying-based online rooms, and multiplayer for up to eight drivers. No external assets, API keys, or runtime npm dependencies.
 
 The static build is published at `https://deepinkgroup.github.io/apex-circuit/`. GitHub Pages runs every circuit, time attack, AI rivals, ghosts, medals, lap history, touch controls, and the follow camera in the browser. Online rooms need a running server because GitHub Pages cannot execute Node.js; connect the Pages UI to a deployed `server.js` address from the Online rooms tab.
 
@@ -11,7 +11,8 @@ Install Node.js 20 or newer. Double-click **START GAME.cmd**, or run `node serve
 ## Race Hub update
 
 - **Event-first home page:** choose Practice, AI Race, or Online Race before configuring the event. The selected format reveals its circuit, distance, opponent, server, and garage controls while the home page stays focused and easy to scan.
-- **Eleven circuits:** Aurora Icefield, Sakura Circuit, Marina Grand Prix, and Crimson Caldera join the seven existing destinations. Every circuit has its own geometry, colors, atmosphere, personal bests, ghosts, and lap history.
+- **Twelve circuits:** Aurora Icefield, Sakura Circuit, Marina Grand Prix, Crimson Caldera, and Obsidian Pass join the original destinations. Every circuit has its own geometry, colors, atmosphere, personal bests, ghosts, and lap history.
+- **Qualifying and grid:** online rooms run qualifying before the race. The fastest valid lap takes pole, the grid locks in qualifying order, and the host releases the field from that grid.
 - **Intelligent race engineering:** the engineer creates a tailored setup for each circuit. Drivers can still choose Qualifying, Balanced, Race, or Wet presets and tune nine parameters. Live analysis reports top speed, cornering, stability, tyre life, and understeer/neutral/rotation balance.
 - **Tyre degradation:** compounds now trade peak grip for life. Pressure, speed, slip, and compound affect wear; worn tyres progressively reduce available grip and the HUD reports remaining tyre life.
 - **Correct starting grid:** all eight grid slots alternate sides in four rows, remain fully behind the timing line, and keep safe longitudinal and lateral separation on every circuit.
@@ -59,24 +60,47 @@ The white line defines the circuit edge. Kerbs do not count as part of the circu
 
 Solo practice pauses its simulation while the page is hidden. Multiplayer races continue on the server; input releases on blur and stale input stops applying. Disconnected clients leave the room after 30 seconds, and host control transfers to another driver. A page refresh creates a new session; ask the host to return to the lobby to rejoin.
 
-## Play with friends
+## Play online from GitHub Pages
+
+The GitHub Pages site is a static game client. It needs a separate public server for Online Race. The simplest path is a Render web service because this repository already includes `server.js` and the service reads Render's `PORT` variable automatically.
+
+### Deploy the race server on Render
+
+1. Create a [Render Web Service](https://dashboard.render.com/select-repo?type=web) and connect the `DeepInkGroup/apex-circuit` repository.
+2. Use these settings:
+
+   | Render field | Value |
+   | --- | --- |
+   | Runtime | Node |
+   | Branch | `main` |
+   | Build command | `npm install` |
+   | Start command | `node server.js` |
+   | Health check path | `/health` |
+3. In **Environment**, create `ALLOWED_ORIGINS` with exactly `https://deepinkgroup.github.io`. Add your own custom game domain too, separated by commas, if you use one.
+4. Deploy. Render provides an address similar to `https://your-race-server.onrender.com` when the deploy becomes live.
+5. Open [Deep Racing on GitHub Pages](https://deepinkgroup.github.io/apex-circuit/), choose **Online Race**, paste that HTTPS address in **Multiplayer server**, and select **Connect**. The page remembers the address in that browser.
+6. Create a room, share its six-character code, run qualifying, then lock the grid and start the race.
+
+Render's Node web-service flow uses a build command, start command, environment variables, and a public `onrender.com` address as described in the [official Render documentation](https://render.com/docs/web-services). Rooms are held in memory, so use one service instance; restarting or redeploying the service clears active rooms.
+
+### Play with friends on your network
 
 1. Everyone opens the **same server address**.
 2. Enter a driver name, choose a setup and race distance, then create a room.
 3. Share the six-character code; other drivers enter it and select Join.
-4. The host starts the race. The host can start a rematch or return everyone to the lobby.
+4. The host starts qualifying. Each driver sets a clean lap, the fastest valid lap takes pole, then the host locks the grid and starts the race.
 
 On the same LAN/Wi-Fi, friends open `http://YOUR-PC-LAN-IP:3000` (find the IPv4 address with `ipconfig`). Windows Firewall must permit Node.js connections on the private network.
 
-For internet play, run this folder on a public Node.js or container host supporting long-lived HTTP connections. Start command: `node server.js`. The server listens on `0.0.0.0`, reads `PORT` (default 3000), and uses SSE for race snapshots. Disable reverse-proxy response buffering for `/events`, configure `ALLOWED_ORIGINS=https://deepinkgroup.github.io`, and use one server instance because rooms live in memory. Share the public HTTPS address and room code. A separate public multiplayer server is not included in this local installation.
+For another host, run this folder on a public Node.js or container service supporting long-lived HTTP connections. Start command: `node server.js`. The server listens on `0.0.0.0`, reads `PORT` (default 3000), and uses SSE for race snapshots. Disable reverse-proxy response buffering for `/events`, configure `ALLOWED_ORIGINS=https://deepinkgroup.github.io`, and use one server instance because rooms live in memory. Share the public HTTPS address and room code.
 
 ## Storage and checks
 
 Practice ghosts and personal bests use a new track-specific browser storage key. Old oval records are not mixed with Harbor Run records. Rooms and multiplayer results reset when the server restarts.
 
-- `npm test`: eleven-circuit geometry, starting-grid placement, timing, tyre degradation, four-wheel incident penalties, setup handling, stability, AI sprint, Pages asset paths, and track-aware multiplayer integration checks.
+- `npm test`: twelve-circuit geometry, starting-grid placement, timing, tyre degradation, four-wheel incident penalties, setup handling, stability, AI sprint, qualifying/grid multiplayer flow, and Pages asset paths.
 - `npm run build:pages`: creates the static `dist/` folder used by GitHub Pages.
 - `node drive-check.cjs`: complete clean laps driven using only throttle, brake, and steering by a test driver.
-- `node browser-check.cjs`: Windows/Edge browser checks covering the event-first home page, all eleven renders, race-engineer setups, tyre analysis, desktop/mobile controls, ghost persistence, and two-player racing. This uses local test ports 3100 and 9235 and saves screenshots under `artifacts/`.
+- `node browser-check.cjs`: Windows/Edge browser checks covering the event-first home page, all twelve renders, race-engineer setups, tyre analysis, desktop/mobile controls, ghost persistence, qualifying, locked grids, and two-player racing. This uses local test ports 3100 and 9235 and saves screenshots under `artifacts/`.
 
 This remains a casual game prototype. Persistent accounts, public matchmaking, production anti-abuse controls and multi-server room storage are outside this version.
