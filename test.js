@@ -4,7 +4,7 @@ const P=require('./public/physics');
 function place(p,s,now){const loc=P.at(s);p.x=loc.x;p.y=loc.y;p.angle=loc.angle;P.step(p,{},0,now);}
 function driveDistance(p,from,to,start=1000){for(let s=from;s<=to;s+=8)place(p,s,start+s*10);place(p,to,start+to*10);}
 test('all circuits are closed, separated, bounded, and have asphalt grids',()=>{
-  assert.deepEqual(Object.keys(P.tracks),['harbor','alpine','sunset','metro','emerald','thunder','zenith']);
+  assert.deepEqual(Object.keys(P.tracks),['harbor','alpine','sunset','metro','emerald','thunder','zenith','aurora','sakura','marina','volcano']);
   for(const [id,track] of Object.entries(P.tracks)){
     const a=P.at(0,id),b=P.at(track.length,id);assert.ok(Math.hypot(a.x-b.x,a.y-b.y)<.001,id+' closes');
     for(let i=0;i<8;i++){const p=P.spawn(i,id);assert.equal(p.trackId,id);assert.ok(P.nearest(p.x,p.y,id).distance<track.road/2);}
@@ -36,6 +36,7 @@ test('four-wheel track limits delete laps and use F1-style race strikes',()=>{
 test('garage setup is sanitized and materially changes the car',()=>{
   assert.deepEqual(P.sanitizeSetup({downforce:'rocket',brakeBias:99,differential:2,gearing:'long',compound:'soft',suspension:99,antiRoll:1,steering:72,tirePressure:18}),{downforce:'balanced',brakeBias:64,differential:30,gearing:'long',compound:'soft',suspension:80,antiRoll:20,steering:70,tirePressure:20});
   const short=P.spawn(0,'harbor',{gearing:'short'}),long=P.spawn(0,'harbor',{gearing:'long'});for(let i=0;i<120;i++){P.step(short,{up:true},1/60,1000+i*17);P.step(long,{up:true},1/60,1000+i*17);}assert.ok(short.speed>long.speed,'short gearing accelerates harder');
+  const soft=P.spawn(0,'harbor',{compound:'soft'}),hard=P.spawn(0,'harbor',{compound:'hard'});for(let i=0;i<600;i++){P.step(soft,{up:true,right:i%180<60},1/60,5000+i*17);P.step(hard,{up:true,right:i%180<60},1/60,5000+i*17);}assert.ok(soft.tireWear<hard.tireWear,'soft tyres trade life for grip');
 });
 test('starting grid is staggered, separated, and fully behind the line on every circuit',()=>{
   for(const id of Object.keys(P.tracks)){const cars=Array.from({length:8},(_,i)=>P.spawn(i,id));for(const car of cars){assert.ok(car.progress<=-45,id+' car behind line');assert.equal(car.gridSlot,cars.indexOf(car));assert.ok(P.nearest(car.x,car.y,id).distance<P.getTrack(id).road/2);}for(let i=0;i<cars.length;i++)for(let j=i+1;j<cars.length;j++)assert.ok(Math.hypot(cars[i].x-cars[j].x,cars[i].y-cars[j].y)>40,id+' grid cars separated');}
