@@ -1,6 +1,6 @@
-# Apex Circuit — Grand Prix
+# Apex Circuit — Evolution
 
-A self-contained browser racing game with five circuits, tunable car setups, solo time attacks, AI sprint races, and multiplayer rooms for up to eight drivers. No external assets, API keys, or runtime npm dependencies.
+A self-contained browser racing game with seven circuits, advanced car setups, solo time attacks, AI sprint races, and multiplayer rooms for up to eight drivers. No external assets, API keys, or runtime npm dependencies.
 
 The static build is published at `https://deepinkgroup.github.io/apex-circuit/`. GitHub Pages runs every circuit, time attack, AI rivals, ghosts, medals, lap history, touch controls, and the follow camera in the browser. Online rooms need a running server because GitHub Pages cannot execute Node.js; connect the Pages UI to a deployed `server.js` address from the Online rooms tab.
 
@@ -8,10 +8,12 @@ The static build is published at `https://deepinkgroup.github.io/apex-circuit/`.
 
 Install Node.js 20 or newer. Double-click **START GAME.cmd**, or run `node server.js`, then open **http://localhost:3000**. The launcher opens your browser and reuses an already-running Harbor Run server.
 
-## Grand Prix update
+## Evolution update
 
-- **Five circuits:** Neon Metro adds a narrow night street course and Emerald Valley adds a fast forest layout alongside Harbor Run, Alpine Crest, and Sunset Speedway. Each has separate procedural scenery, colors, road width, personal bests, ghosts, and lap history.
-- **Garage setup:** tune downforce, gearing, tyre compound, brake bias, and differential. The setup changes high-speed grip, drag, acceleration, top speed, tyre behavior, braking stability, and traction in the shared physics engine. Online rooms preserve each driver's setup.
+- **Seven circuits:** Thunder Ring adds sweeping high-G power corners and Zenith Hills adds a technical summit challenge. They join Neon Metro, Emerald Valley, Harbor Run, Alpine Crest, and Sunset Speedway with distinct procedural scenery and track geometry.
+- **Race engineering:** choose Qualifying, Balanced, Race, or Wet presets, then tune downforce, gearing, tyre compound, brake bias, differential, suspension, anti-roll stiffness, steering response, and tyre pressure. Live meters explain the speed, cornering, and stability tradeoffs. Online rooms preserve each driver's setup.
+- **Correct starting grid:** all eight grid slots alternate sides in four rows, remain fully behind the timing line, and keep safe longitudinal and lateral separation on every circuit.
+- **Improved handling:** suspension, anti-roll stiffness, steering ratio, tyre pressure, and differential now shape turn-in, lateral grip, yaw response, kerb control, wheelspin, and the tyre temperature window. Handbrake rotation is progressive and retains more forward momentum.
 - **Expanded race distance:** choose a one-lap shootout, 3-lap sprint, 5-lap Grand Prix, 10-lap endurance race, 15-lap marathon, or 20-lap full distance. The multiplayer API safely accepts 1–20 laps.
 - **Four-wheel track-limit stewarding:** the white line is the circuit boundary and kerbs are outside it. An incident is recorded only when all four wheels leave the circuit. Practice laps are deleted; races issue a black-and-white warning at strike three and add five seconds at strike four and every later strike.
 - **Driver model:** progressive throttle and brake input, tire temperature and grip variation, traction-control intervention, ABS behavior on low-grip braking, longitudinal weight transfer, barrier-impact damage, and reduced performance after damage.
@@ -70,9 +72,9 @@ For internet play, run this folder on a public Node.js or container host support
 
 Practice ghosts and personal bests use a new track-specific browser storage key. Old oval records are not mixed with Harbor Run records. Rooms and multiplayer results reset when the server restarts.
 
-- `npm test`: five-circuit geometry, timing, four-wheel incident penalties, setup handling, stability, AI sprint, Pages asset paths, and track-aware multiplayer integration checks.
+- `npm test`: seven-circuit geometry, starting-grid placement, timing, four-wheel incident penalties, setup handling, stability, AI sprint, Pages asset paths, and track-aware multiplayer integration checks.
 - `npm run build:pages`: creates the static `dist/` folder used by GitHub Pages.
 - `node drive-check.cjs`: complete clean laps driven using only throttle, brake, and steering by a test driver.
-- `node browser-check.cjs`: Windows/Edge browser checks covering all five renders, setup persistence, desktop/mobile controls, ghost persistence, and two-player racing. This uses local test ports 3100 and 9235 and saves screenshots under `artifacts/`.
+- `node browser-check.cjs`: Windows/Edge browser checks covering all seven renders, setup presets and persistence, desktop/mobile controls, ghost persistence, and two-player racing. This uses local test ports 3100 and 9235 and saves screenshots under `artifacts/`.
 
 This remains a casual game prototype. Persistent accounts, public matchmaking, production anti-abuse controls and multi-server room storage are outside this version.

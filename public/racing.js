@@ -9,7 +9,7 @@
     const error=Math.atan2(Math.sin(desired-car.angle),Math.cos(desired-car.angle));
     let curvature=0;
     for(let d=0;d<180;d+=20){const a=P.at(n.s+d,car.trackId),b=P.at(n.s+d+25,car.trackId);curvature=Math.max(curvature,Math.abs(Math.atan2(Math.sin(b.angle-a.angle),Math.cos(b.angle-a.angle)))/25);}
-    const pace=[.96,1,1.025][index%3];
+    const circuitPace={metro:.9,zenith:.94,alpine:.97}[car.trackId]||1,pace=[.96,1,1.025][index%3]*circuitPace;
     const targetSpeed=Math.max(52,Math.min(setup.max,Math.sqrt(setup.corner/Math.max(.001,curvature))))*pace;
     return {up:car.speed<targetSpeed,down:car.speed>targetSpeed+12,right:error>.025,left:error<-.025};
   }

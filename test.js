@@ -4,7 +4,7 @@ const P=require('./public/physics');
 function place(p,s,now){const loc=P.at(s);p.x=loc.x;p.y=loc.y;p.angle=loc.angle;P.step(p,{},0,now);}
 function driveDistance(p,from,to,start=1000){for(let s=from;s<=to;s+=8)place(p,s,start+s*10);place(p,to,start+to*10);}
 test('all circuits are closed, separated, bounded, and have asphalt grids',()=>{
-  assert.deepEqual(Object.keys(P.tracks),['harbor','alpine','sunset','metro','emerald']);
+  assert.deepEqual(Object.keys(P.tracks),['harbor','alpine','sunset','metro','emerald','thunder','zenith']);
   for(const [id,track] of Object.entries(P.tracks)){
     const a=P.at(0,id),b=P.at(track.length,id);assert.ok(Math.hypot(a.x-b.x,a.y-b.y)<.001,id+' closes');
     for(let i=0;i<8;i++){const p=P.spawn(i,id);assert.equal(p.trackId,id);assert.ok(P.nearest(p.x,p.y,id).distance<track.road/2);}
@@ -34,8 +34,11 @@ test('four-wheel track limits delete laps and use F1-style race strikes',()=>{
   assert.equal(race.blackWhite,true);assert.equal(race.penalty,10000,'strike four and every later strike add five seconds');
 });
 test('garage setup is sanitized and materially changes the car',()=>{
-  assert.deepEqual(P.sanitizeSetup({downforce:'rocket',brakeBias:99,differential:2,gearing:'long',compound:'soft'}),{downforce:'balanced',brakeBias:64,differential:30,gearing:'long',compound:'soft'});
+  assert.deepEqual(P.sanitizeSetup({downforce:'rocket',brakeBias:99,differential:2,gearing:'long',compound:'soft',suspension:99,antiRoll:1,steering:72,tirePressure:18}),{downforce:'balanced',brakeBias:64,differential:30,gearing:'long',compound:'soft',suspension:80,antiRoll:20,steering:70,tirePressure:20});
   const short=P.spawn(0,'harbor',{gearing:'short'}),long=P.spawn(0,'harbor',{gearing:'long'});for(let i=0;i<120;i++){P.step(short,{up:true},1/60,1000+i*17);P.step(long,{up:true},1/60,1000+i*17);}assert.ok(short.speed>long.speed,'short gearing accelerates harder');
+});
+test('starting grid is staggered, separated, and fully behind the line on every circuit',()=>{
+  for(const id of Object.keys(P.tracks)){const cars=Array.from({length:8},(_,i)=>P.spawn(i,id));for(const car of cars){assert.ok(car.progress<=-45,id+' car behind line');assert.equal(car.gridSlot,cars.indexOf(car));assert.ok(P.nearest(car.x,car.y,id).distance<P.getTrack(id).road/2);}for(let i=0;i<cars.length;i++)for(let j=i+1;j<cars.length;j++)assert.ok(Math.hypot(cars[i].x-cars[j].x,cars[i].y-cars[j].y)>40,id+' grid cars separated');}
 });
 test('braking, progressive steering, rear slip, grip and frozen finish',()=>{
   const p=P.spawn();for(let i=0;i<90;i++)P.step(p,{up:true},1/60,1000+i*1000/60);
@@ -66,7 +69,7 @@ test('multiplayer: room settings, stream, authority, start, movement, recovery, 
   await api('start',{token:host.token});do{s=await state();}while(s.status!=='racing');assert.ok(s.start>s.now);assert.equal(s.players[0].speed,0);
   assert.equal((await api('join',{code:host.room.code})).status,409);
   await new Promise(r=>setTimeout(r,3100));await api('input',{token:host.token,up:true,handbrake:true});
-  do{s=await state();}while(s.now<Date.now()-100);while(s.players[0].speed===0)s=await state();assert.ok(s.players[0].x>host.room.players[0].x);assert.ok(s.players[0].grip<1);
+  do{s=await state();}while(s.now<Date.now()-100);while(s.players[0].speed===0)s=await state();assert.ok(Math.hypot(s.players[0].x-host.room.players[0].x,s.players[0].y-host.room.players[0].y)>.001);assert.ok(s.players[0].grip<1);
   assert.equal((await api('recover',{token:host.token})).status,200);do{s=await state();}while(s.players[0].recoveries!==1);assert.equal(s.players[0].valid,false);
   assert.equal((await api('recover',{token:host.token})).status,409);
   await api('reset',{token:host.token});do{s=await state();}while(s.status!=='lobby');assert.equal(s.players[0].lap,0);assert.equal(s.players[0].recoveries,0);
