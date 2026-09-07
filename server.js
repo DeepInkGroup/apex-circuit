@@ -7,7 +7,7 @@ const colors=['#b7f76b','#67d9ff','#ff826f','#ffc75b','#c09cff','#ffffff','#64ff
 function send(res,status,data){res.writeHead(status,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(JSON.stringify(data));}
 function snapshot(r){return {code:r.code,host:r.host,status:r.status,start:r.start,laps:r.laps,trackId:r.trackId,now:Date.now(),engine:P.VERSION,players:[...r.players.values()].map(({token,input,stream,seen,...p})=>p)};}
 function remove(p){const r=rooms.get(p.code);p.stream?.end();sessions.delete(p.token);if(!r)return;r.players.delete(p.id);if(!r.players.size)rooms.delete(r.code);else if(r.host===p.id)r.host=r.players.keys().next().value;}
-function resetCars(r){let i=0;for(const p of r.players.values())Object.assign(p,P.spawn(i++,r.trackId),{input:{}});}
+function resetCars(r){let i=0;for(const p of r.players.values()){const setup=p.setup;Object.assign(p,P.spawn(i++,r.trackId,setup),{raceMode:true,input:{}});}}
 const server=http.createServer(async(req,res)=>{
   try {
     const url=new URL(req.url,'http://localhost');
@@ -19,7 +19,7 @@ const server=http.createServer(async(req,res)=>{
       if(permitted){res.setHeader('Access-Control-Allow-Origin',origin);res.setHeader('Vary','Origin');res.setHeader('Access-Control-Allow-Methods','GET, POST, OPTIONS');res.setHeader('Access-Control-Allow-Headers','Content-Type');}
     }
     if(req.method==='OPTIONS'){res.writeHead(204);return res.end();}
-    if(url.pathname==='/health')return send(res,200,{app:'apex-circuit',version:P.VERSION,release:'4.0.0',protocol:4,tracks:Object.keys(P.tracks),rooms:rooms.size});
+    if(url.pathname==='/health')return send(res,200,{app:'apex-circuit',version:P.VERSION,release:'5.0.0',protocol:5,tracks:Object.keys(P.tracks),rooms:rooms.size});
     if(url.pathname==='/events'){
       const p=sessions.get(url.searchParams.get('token'));
       if(!p)return send(res,401,{error:'Session expired. Join again.'});
@@ -47,7 +47,7 @@ const server=http.createServer(async(req,res)=>{
         }
         const token=crypto.randomBytes(24).toString('hex'),id=crypto.randomBytes(6).toString('hex');
         const used=new Set([...r.players.values()].map(p=>p.color));
-        const p={...P.spawn(r.players.size,r.trackId),id,token,code:r.code,name:String(data.name||'Driver').trim().slice(0,18)||'Driver',color:colors.find(c=>!used.has(c))||colors[0],input:{},seen:Date.now()};
+        const p={...P.spawn(r.players.size,r.trackId,data.setup),raceMode:true,id,token,code:r.code,name:String(data.name||'Driver').trim().slice(0,18)||'Driver',color:colors.find(c=>!used.has(c))||colors[0],input:{},seen:Date.now()};
         r.players.set(id,p);sessions.set(token,p);r.host??=id;
         return send(res,200,{token,id,room:snapshot(r)});
       }

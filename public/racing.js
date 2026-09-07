@@ -13,10 +13,11 @@
     const targetSpeed=Math.max(52,Math.min(setup.max,Math.sqrt(setup.corner/Math.max(.001,curvature))))*pace;
     return {up:car.speed<targetSpeed,down:car.speed>targetSpeed+12,right:error>.025,left:error<-.025};
   }
-  function createSprint(name='Driver',difficulty='club',laps=3,trackId=P.activeTrack){
+  function createSprint(name='Driver',difficulty='club',laps=3,trackId=P.activeTrack,driverSetup=P.setupDefaults){
     const names=[name,'Mika','Jules','Nova'],colors=['#b7f76b','#67d9ff','#ff826f','#c09cff'];
     const distance=Math.max(1,Math.min(20,Math.round(Number(laps)||3)));
-    return {status:'countdown',clock:0,start:3000,firstFinish:null,laps:distance,trackId:P.getTrack(trackId).id,difficulty:levels[difficulty]?difficulty:'club',players:names.map((name,i)=>({...P.spawn(i,trackId),id:i===0?'local':'ai-'+i,name,color:colors[i],ai:i>0,dnf:false}))};
+    const aiSetups=[{downforce:'high',brakeBias:59,differential:48,gearing:'short',compound:'soft'},{downforce:'balanced',brakeBias:58,differential:56,gearing:'balanced',compound:'medium'},{downforce:'low',brakeBias:57,differential:62,gearing:'long',compound:'hard'}];
+    return {status:'countdown',clock:0,start:3000,firstFinish:null,laps:distance,trackId:P.getTrack(trackId).id,difficulty:levels[difficulty]?difficulty:'club',players:names.map((name,i)=>({...P.spawn(i,trackId,i?aiSetups[i-1]:driverSetup),raceMode:true,id:i===0?'local':'ai-'+i,name,color:colors[i],ai:i>0,dnf:false}))};
   }
   function stepSprint(race,keys,dt){
     if(race.status==='finished')return;

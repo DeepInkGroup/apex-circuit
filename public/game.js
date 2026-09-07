@@ -6,7 +6,10 @@ let boardAt=0,inputBusy=false,recording=[],recordAt=0,personal=null,ghostEnabled
 let snapshots=[],toastUntil=0,seenLap=0,seenSector=0,wasValid=true,follow=matchMedia('(max-width:700px)').matches;
 let localRace=null,selectedMode='practice',lapHistory=[],serverReady=false,apiBase='',connecting=false,selectedTrack='harbor';
 const config=window.APEX_CONFIG||{static:false,serverUrl:''};
-try{const savedTrack=localStorage.getItem('apex-track');if(Physics.tracks[savedTrack])selectedTrack=savedTrack;const name=localStorage.getItem('apex-name');if(name)$('name').value=name.slice(0,18);}catch{}
+let currentSetup={...Physics.setupDefaults};
+try{const savedTrack=localStorage.getItem('apex-track');if(Physics.tracks[savedTrack])selectedTrack=savedTrack;const name=localStorage.getItem('apex-name');if(name)$('name').value=name.slice(0,18);currentSetup=Physics.sanitizeSetup(JSON.parse(localStorage.getItem('apex-setup')||'{}'));}catch{}
+function readSetup(){return Physics.sanitizeSetup({downforce:$('setup-downforce').value,gearing:$('setup-gearing').value,compound:$('setup-compound').value,brakeBias:$('setup-brake-bias').value,differential:$('setup-differential').value});}
+function renderSetup(){for(const [id,key] of [['setup-downforce','downforce'],['setup-gearing','gearing'],['setup-compound','compound'],['setup-brake-bias','brakeBias'],['setup-differential','differential']])$(id).value=currentSetup[key];$('brake-bias-value').textContent=currentSetup.brakeBias+'%';$('differential-value').textContent=currentSetup.differential+'%';$('setup-status').textContent=currentSetup.downforce.toUpperCase()+' / '+currentSetup.compound.toUpperCase();}
 function storeKey(suffix=''){return STORAGE+'-'+selectedTrack+suffix;}
 function loadTrackData(){
   personal=null;lapHistory=[];
@@ -26,13 +29,14 @@ function toast(text){$('toast').textContent=text;toastUntil=performance.now()+35
 function clearKeys(){for(const k in keys)keys[k]=false;}
 function practice(){
   localRace=null;if($('results').open)$('results').close();
-  local={...Physics.spawn(0,selectedTrack),id:'local',name:$('name').value.trim()||'Driver',color:Physics.getTrack(selectedTrack).accent};
+  local={...Physics.spawn(0,selectedTrack,currentSetup),id:'local',name:$('name').value.trim()||'Driver',color:Physics.getTrack(selectedTrack).accent};
   if(personal){local.best=personal.best;local.bestSectors=personal.sectors||[];}
   simTime=Date.now();local.lapStart=simTime;accumulator=0;recording=[];recordAt=0;seenLap=seenSector=0;wasValid=true;clearKeys();renderer.clear();
 }
-practice();
-const trackCopy={harbor:{intro:'Harbor walls, linked corners, and no room for a lazy line.',character:'TECHNICAL CIRCUIT',weather:'☀',temperature:'24° · TRACK 32°'},alpine:{intro:'Climb through fast switchbacks where rhythm matters more than power.',character:'RHYTHM CIRCUIT',weather:'◭',temperature:'14° · TRACK 20°'},sunset:{intro:'Wide desert sweepers reward bravery, clean exits, and top speed.',character:'HIGH-SPEED CIRCUIT',weather:'◒',temperature:'31° · TRACK 43°'}};
-function updateTrackUI(){const track=Physics.getTrack(selectedTrack),copy=trackCopy[selectedTrack];document.documentElement.style.setProperty('--lime',track.accent);$('nav-track').textContent=track.name.toUpperCase();$('race-track-name').textContent=track.name.toUpperCase();$('track-stamp').textContent=track.name.toUpperCase()+' / 04';$('track-intro').textContent=copy.intro;$('track-length').innerHTML=(track.length/2000).toFixed(1)+'<span> KM</span>';$('track-character').textContent=copy.character;$('track-condition').textContent=track.subtitle;$('weather').firstChild.textContent=copy.weather;$('weather').querySelector('small').textContent=copy.temperature;document.querySelectorAll('[data-track]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.track===selectedTrack)));}
+renderSetup();practice();
+for(const id of ['setup-downforce','setup-gearing','setup-compound','setup-brake-bias','setup-differential'])$(id).oninput=()=>{currentSetup=readSetup();renderSetup();try{localStorage.setItem('apex-setup',JSON.stringify(currentSetup));}catch{}if(!session&&!localRace)practice();};
+const trackCopy={harbor:{intro:'Harbor walls, linked corners, and no room for a lazy line.',character:'TECHNICAL CIRCUIT',weather:'☀',temperature:'24° · TRACK 32°'},alpine:{intro:'Climb through fast switchbacks where rhythm matters more than power.',character:'RHYTHM CIRCUIT',weather:'◭',temperature:'14° · TRACK 20°'},sunset:{intro:'Wide desert sweepers reward bravery, clean exits, and top speed.',character:'HIGH-SPEED CIRCUIT',weather:'◒',temperature:'31° · TRACK 43°'},metro:{intro:'Thread the neon canyon: late braking, tight walls, zero room for error.',character:'STREET CIRCUIT',weather:'☾',temperature:'19° · TRACK 23°'},emerald:{intro:'Carry momentum through a fast forest ribbon of crests and long arcs.',character:'FLOWING CIRCUIT',weather:'◌',temperature:'18° · TRACK 25°'}};
+function updateTrackUI(){const track=Physics.getTrack(selectedTrack),copy=trackCopy[selectedTrack];document.documentElement.style.setProperty('--lime',track.accent);$('nav-track').textContent=track.name.toUpperCase();$('race-track-name').textContent=track.name.toUpperCase();$('track-stamp').textContent=track.name.toUpperCase()+' / 05';$('track-intro').textContent=copy.intro;$('track-length').innerHTML=(track.length/2000).toFixed(1)+'<span> KM</span>';$('track-character').textContent=copy.character;$('track-condition').textContent=track.subtitle;$('weather').firstChild.textContent=copy.weather;$('weather').querySelector('small').textContent=copy.temperature;document.querySelectorAll('[data-track]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.track===selectedTrack)));}
 function changeTrack(id,forced=false){if(!Physics.tracks[id]||(!forced&&(session||localRace))){toast('FINISH OR LEAVE THE CURRENT RACE TO CHANGE CIRCUIT');return false;}selectedTrack=id;renderer.setTrack(id);loadTrackData();practice();updateTrackUI();renderHistory();try{localStorage.setItem('apex-track',id);}catch{}return true;}
 document.querySelectorAll('[data-track]').forEach(b=>b.onclick=()=>changeTrack(b.dataset.track));updateTrackUI();
 function setMode(mode){
@@ -42,7 +46,7 @@ function setMode(mode){
   $('distance-setting').hidden=mode==='practice'||!!session;
   $('panel-title').textContent=mode==='practice'?'Chase your best.':mode==='sprint'?'Meet your rivals.':'Bring your friends.';
   $('panel-eyebrow').textContent=mode==='practice'?'ONE MORE LAP':mode==='sprint'?'A GRID OF FOUR':'MAKE IT A RACE';
-  $('panel-description').textContent=mode==='practice'?'Find your rhythm, save a ghost, and master all three circuits.':mode==='sprint'?'Mika, Jules, and Nova are waiting. Pick your pace and race distance.':'Connect to the same server, choose a circuit, then share a six-character room code.';
+  $('panel-description').textContent=mode==='practice'?'Tune your car, save a ghost, and master all five circuits.':mode==='sprint'?'Mika, Jules, and Nova are waiting. Pick your setup and race distance.':'Connect to the same server, choose a circuit and setup, then share a six-character code.';
 }
 for(const mode of ['practice','sprint','online'])$('mode-'+mode).onclick=()=>setMode(mode);
 function renderHistory(){
@@ -61,7 +65,7 @@ $('export-laps').onclick=()=>{const blob=new Blob([JSON.stringify({track:Physics
 renderHistory();
 function startSprint(){
   if(session)return;practice();setMode('sprint');
-  localRace=Racing.createSprint($('name').value.trim()||'Driver',$('difficulty').value,Number($('race-laps').value),selectedTrack);local=localRace.players[0];clearKeys();
+  localRace=Racing.createSprint($('name').value.trim()||'Driver',$('difficulty').value,Number($('race-laps').value),selectedTrack,currentSetup);local=localRace.players[0];clearKeys();
   try{localStorage.setItem('apex-name',$('name').value);}catch{}
 }
 $('start-sprint').onclick=startSprint;$('end-sprint').onclick=()=>{practice();setMode('practice');};
@@ -84,7 +88,7 @@ async function connectServer(value,quiet=false){
     if(location.protocol==='https:'&&url.protocol!=='https:')throw new Error('This page needs an HTTPS multiplayer server.');
     if(!url.pathname.endsWith('/'))url.pathname+='/';
     const res=await fetch(new URL('health',url),{signal:AbortSignal.timeout(7000)});if(!res.ok)throw new Error('Server is unavailable. Check its address.');
-    const info=await res.json();if(info.app!=='apex-circuit'||info.version!==Physics.VERSION||info.protocol!==4)throw new Error('This server needs the World Tour update.');
+    const info=await res.json();if(info.app!=='apex-circuit'||info.version!==Physics.VERSION||info.protocol!==5)throw new Error('This server needs the Grand Prix update.');
     apiBase=url.href;serverReady=true;$('server-url').value=url.origin+(url.pathname==='/'?'':url.pathname);$('server-status').textContent='Connected · ready to host or join.';
     try{if(url.origin!==location.origin)localStorage.setItem('apex-server',apiBase);}catch{}
   }catch(e){$('server-status').textContent=quiet?'Solo and AI racing are ready. Connect a server for online rooms.':e.message==='Failed to fetch'?'Could not connect. Check HTTPS, the server address, and its allowed origins.':e.message;}
@@ -107,16 +111,16 @@ async function enter(action){
   if(!serverReady||session)return;if(localRace)practice();setMode('online');
   $('host').disabled=$('join').disabled=true;clearKeys();
   try{
-    const result=await api(action,{name:$('name').value,code:$('code').value.trim(),laps:Number($('race-laps').value),trackId:selectedTrack});
+    const result=await api(action,{name:$('name').value,code:$('code').value.trim(),laps:Number($('race-laps').value),trackId:selectedTrack,setup:currentSetup});
     if(result.room.trackId&&result.room.trackId!==selectedTrack)changeTrack(result.room.trackId,true);session={token:result.token,id:result.id};snapshots=[];receive(result.room);seenLap=seenSector=0;wasValid=true;renderer.clear();
     try{localStorage.setItem('apex-name',$('name').value);}catch{}
     events=new EventSource(endpoint('events')+'?token='+session.token);
     events.onmessage=e=>receive(JSON.parse(e.data));events.onerror=()=>{$('connection').textContent='● RECONNECTING';};
-    $('room-form').hidden=true;$('room').hidden=false;$('copy').textContent=room.code;$('server-setup').hidden=true;$('driver-profile').hidden=true;$('distance-setting').hidden=true;
+    $('room-form').hidden=true;$('room').hidden=false;$('copy').textContent=room.code;$('server-setup').hidden=true;$('driver-profile').hidden=true;$('distance-setting').hidden=true;$('car-setup').disabled=true;
     message('Friends connect to '+new URL(apiBase).host+' and enter this room code.');
   }catch(e){message(e.message);}finally{$('host').disabled=$('join').disabled=!serverReady;}
 }
-function leaveLocal(){events?.close();events=null;session=null;room=null;snapshots=[];$('room-form').hidden=false;$('room').hidden=true;$('server-setup').hidden=false;$('driver-profile').hidden=false;$('connection').textContent='● SOLO PRACTICE';practice();setMode('online');}
+function leaveLocal(){events?.close();events=null;session=null;room=null;snapshots=[];$('room-form').hidden=false;$('room').hidden=true;$('server-setup').hidden=false;$('driver-profile').hidden=false;$('car-setup').disabled=false;$('connection').textContent='● SOLO PRACTICE';practice();setMode('online');}
 $('host').onclick=()=>enter('host');$('join').onclick=()=>enter('join');$('code').onkeydown=e=>{if(e.key==='Enter')enter('join');};
 $('leave').onclick=async()=>{try{await api('leave');}catch{}leaveLocal();message('Back in practice.');};
 $('start').onclick=async()=>{try{await api('start');clearKeys();seenLap=seenSector=0;wasValid=true;renderer.clear();message('');}catch(e){message(e.message);}};
@@ -216,13 +220,13 @@ function hud(p,players,time){
   $('delta').textContent=difference===null?(p.best?'BEST CLEAN LAP':'SET YOUR BENCHMARK'):'S'+sector+' '+(difference>=0?'+':'−')+(Math.abs(difference)/1000).toFixed(3)+'s';$('delta').className=difference===null?'':difference<=0?'faster':'slower';
   for(let i=0;i<3;i++){const value=p.sectors[i]??p.lastSectors[i];const el=$('s'+(i+1));el.textContent=split(value);el.style.color=value!=null&&p.bestSectors[i]!=null?(value<=p.bestSectors[i]?'#b7f76b':'#f6b66b'):'';}
   $('surface').textContent=p.wrongWay?'↶ WRONG WAY':p.slip>12?'● SLIDING':p.surface==='GRASS'?'● OFF TRACK':'● '+p.surface;$('surface').style.color=p.surface==='GRASS'||p.wrongWay?'#ffbd87':'#b7f76b';
-  $('tire-temp').textContent=Math.round(p.tireTemp||72)+'°C';$('tire-temp').style.color=p.tireTemp>108?'#ff9675':p.tireTemp>82?'var(--lime)':'';$('damage').textContent=Math.round(p.damage||0)+'%';$('damage').style.color=p.damage>50?'#ff9675':'';$('limits').textContent=(p.trackLimits||0)+' / +'+((p.penalty||0)/1000)+'s';$('limits').style.color=p.penalty?'#ffb066':'';
-  $('car-status').textContent=p.impact>20?'IMPACT':p.abs?'ABS ACTIVE':p.tractionControl?'TRACTION CONTROL':p.tireTemp>108?'TIRES HOT':'TRACK CLEAR';
+  $('tire-temp').textContent=Math.round(p.tireTemp||72)+'°C';$('tire-temp').style.color=p.tireTemp>108?'#ff9675':p.tireTemp>82?'var(--lime)':'';$('damage').textContent=Math.round(p.damage||0)+'%';$('damage').style.color=p.damage>50?'#ff9675':'';$('limits').textContent=(p.trackLimits||0)+(p.blackWhite?' · B/W':p.penalty?' · +'+p.penalty/1000+'s':' STRIKES');$('limits').style.color=p.blackWhite||p.penalty?'#ffb066':'';
+  $('car-status').textContent=p.impact>20?'IMPACT':p.wheelsOut===4?'ALL WHEELS OUT':p.wheelsOut?'WHEELS ON WHITE LINE':p.abs?'ABS ACTIVE':p.tractionControl?'TRACTION CONTROL':p.tireTemp>108?'TIRES HOT':'TRACK CLEAR';
   $('ghost-status').textContent=race?'CLEAN RACING · GHOST CARS':!ghostEnabled?'GHOST HIDDEN':personal?'PB GHOST · '+fmt(personal.best):'SET A CLEAN LAP TO UNLOCK YOUR GHOST';
   $('restart').hidden=!!race;$('ghost-toggle').disabled=!!race;
   $('mode').textContent=room?'MULTIPLAYER / '+room.laps+' LAPS':localRace?'AI SPRINT / '+localRace.laps+' LAPS':'TIME ATTACK';$('session-subtitle').textContent=room?'ROOM '+room.code:localRace?localRace.difficulty.toUpperCase()+' · THREE RIVALS':'CHASE YOUR PERSONAL BEST';
   $('end-sprint').hidden=!localRace;$('start-sprint').disabled=!!localRace&&localRace.status!=='finished';$('start-sprint').textContent=localRace?.status==='finished'?'Race again →':'Race the rivals →';
-  $('difficulty').disabled=!!localRace&&localRace.status!=='finished';$('race-laps').disabled=!!localRace&&localRace.status!=='finished';
+  $('difficulty').disabled=!!localRace&&localRace.status!=='finished';$('race-laps').disabled=!!localRace&&localRace.status!=='finished';$('car-setup').disabled=!!session||!!localRace&&localRace.status!=='finished';
   $('medal-status').textContent=personal?(Racing.medal(personal.best)?'◈ '+Racing.medal(personal.best)+' EARNED · '+fmt(personal.best):'NEXT TARGET · BRONZE IN 65 SECONDS'):'Complete a clean lap to earn a medal.';
   if(!session)$('connection').textContent=localRace?'● AI SPRINT':'● SOLO PRACTICE';
   let banner=localRace?(countdown?String(Math.ceil((localRace.start-time)/1000)):p.dnf?'RACE OVER':p.finished?'FINISHED\n'+fmt(p.finish):time-localRace.start<1000?'GO!':''):'';
@@ -230,13 +234,13 @@ function hud(p,players,time){
     const host=room.host===session.id;$('start').hidden=!host;$('reset').hidden=!host||waiting;$('start').disabled=room.status==='racing';$('start').textContent=room.status==='finished'?'Race again →':'Lights out →';
     $('room-status').textContent=waiting?(host?'Share your code. Start when the grid is ready.':'Waiting for the host to start…'):room.status==='finished'?'Race complete. Results include penalties.':'Race live · '+room.laps+' laps. Keep it clean.';
     banner=waiting?'GRID OPEN':countdown?String(Math.ceil((room.start-time)/1000)):p.finished?'FINISHED\n'+fmt(p.finish):time-room.start<1000?'GO!':'';
-    $('board-note').textContent=room.status==='finished'?'Final classification · penalties included.':'Track limit = +3s. Cars do not collide.';
-  }else $('board-note').textContent=localRace?'AI rivals · same physics · +3s per track-limit incident.':personal?'Personal best saved on this browser.':'Your next rival is your last lap.';
+    $('board-note').textContent=room.status==='finished'?'Final classification · penalties included.':'Four wheels out = strike. Strike 3 warning; strike 4 = +5s.';
+  }else $('board-note').textContent=localRace?'F1-style limits · warning at 3, +5s from strike 4.':personal?'Personal best saved on this browser.':'Your next rival is your last lap.';
   $('banner').textContent=banner;
   if(p.lap<seenLap||waiting){seenLap=p.lap;seenSector=0;wasValid=true;}
   if(p.lap>seenLap){if(session)recordLap(p,'Online');toast((p.lastValid?p.last===p.best?'PERSONAL BEST · ':'LAP COMPLETE · ':'INVALID LAP · ')+fmt(p.last));seenLap=p.lap;seenSector=0;}
   if(p.checkpoint>seenSector){toast('SECTOR '+p.checkpoint+' · '+split(p.sectors[p.checkpoint-1])+'s');seenSector=p.checkpoint;}
-  if(p.lastPenalty&&time-p.lastPenalty<120&&race)toast('TRACK LIMITS · 3 SECOND PENALTY');else if(wasValid&&!p.valid&&p.started)toast('TRACK LIMITS · LAP WILL NOT SET A BEST TIME');wasValid=p.valid;
+  if(p.lastPenalty&&time-p.lastPenalty<120){const strikes=p.trackLimits||0;toast(race?(strikes===3?'BLACK & WHITE FLAG · FINAL WARNING':strikes>=4?'TRACK LIMITS · 5 SECOND PENALTY':'TRACK LIMIT STRIKE '+strikes):'TRACK LIMITS · LAP DELETED');}else if(wasValid&&!p.valid&&p.started)toast('TRACK LIMITS · LAP DELETED');wasValid=p.valid;
   $('coach-text').textContent=p.wrongWay?'Turn around and follow the guide dots. Reverse driving does not advance your lap.':p.surface==='GRASS'?'Ease off the throttle and rejoin safely. Press R if you need to recover to the circuit.':p.slip>14?'You’re sliding. Release the handbrake and unwind the steering to recover rear grip.':Math.abs(p.speed)>230?'Eyes up. Brake early for the next bend; trying to turn at full speed will push you wide.':'Brake before the corner, then ease onto the throttle as you unwind the steering.';
 }
 function frame(now){

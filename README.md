@@ -1,6 +1,6 @@
-# Apex Circuit — World Tour
+# Apex Circuit — Grand Prix
 
-A self-contained browser racing game with three circuits, solo time attacks, AI sprint races, and multiplayer rooms for up to eight drivers. No external assets, API keys, or runtime npm dependencies.
+A self-contained browser racing game with five circuits, tunable car setups, solo time attacks, AI sprint races, and multiplayer rooms for up to eight drivers. No external assets, API keys, or runtime npm dependencies.
 
 The static build is published at `https://deepinkgroup.github.io/apex-circuit/`. GitHub Pages runs every circuit, time attack, AI rivals, ghosts, medals, lap history, touch controls, and the follow camera in the browser. Online rooms need a running server because GitHub Pages cannot execute Node.js; connect the Pages UI to a deployed `server.js` address from the Online rooms tab.
 
@@ -8,11 +8,12 @@ The static build is published at `https://deepinkgroup.github.io/apex-circuit/`.
 
 Install Node.js 20 or newer. Double-click **START GAME.cmd**, or run `node server.js`, then open **http://localhost:3000**. The launcher opens your browser and reuses an already-running Harbor Run server.
 
-## World Tour update
+## Grand Prix update
 
-- **Three circuits:** Harbor Run is technical and balanced, Alpine Crest links switchbacks and rhythm changes, and Sunset Speedway uses wide, fast desert sweepers. Each has separate procedural scenery, colors, road width, personal bests, ghosts, and lap history.
+- **Five circuits:** Neon Metro adds a narrow night street course and Emerald Valley adds a fast forest layout alongside Harbor Run, Alpine Crest, and Sunset Speedway. Each has separate procedural scenery, colors, road width, personal bests, ghosts, and lap history.
+- **Garage setup:** tune downforce, gearing, tyre compound, brake bias, and differential. The setup changes high-speed grip, drag, acceleration, top speed, tyre behavior, braking stability, and traction in the shared physics engine. Online rooms preserve each driver's setup.
 - **Expanded race distance:** choose a one-lap shootout, 3-lap sprint, 5-lap Grand Prix, 10-lap endurance race, 15-lap marathon, or 20-lap full distance. The multiplayer API safely accepts 1–20 laps.
-- **Track-limit stewarding:** spending more than a brief moment beyond the legal road edge invalidates the lap and adds three seconds. A clean re-entry is required before another incident can be recorded. The HUD reports incidents and total penalty time.
+- **Four-wheel track-limit stewarding:** the white line is the circuit boundary and kerbs are outside it. An incident is recorded only when all four wheels leave the circuit. Practice laps are deleted; races issue a black-and-white warning at strike three and add five seconds at strike four and every later strike.
 - **Driver model:** progressive throttle and brake input, tire temperature and grip variation, traction-control intervention, ABS behavior on low-grip braking, longitudinal weight transfer, barrier-impact damage, and reduced performance after damage.
 - **Track-aware multiplayer:** each room stores its circuit, and joining clients automatically load the host's circuit. Independent rooms can race different tracks at the same time.
 
@@ -50,14 +51,14 @@ Touch controls appear on phones and touch devices. Buttons in the circuit toolba
 
 Cross the start line to begin your lap timer, then follow the guide dots around the full circuit. All three sectors must be completed. Reversing subtracts progress, and jumping between distant sections cannot award a lap.
 
-Staying beyond the track edge for 0.28 seconds records a track-limit incident, invalidates the current lap, and adds **3 seconds** to race results. The incident remains armed until the car clearly rejoins, preventing repeated penalties while the same excursion continues. Using recovery also invalidates the current lap. Invalid practice laps do not set a personal best or save a ghost. Cars are ghost cars and do not collide. Final classification is settled when everyone finishes; a host can return a stuck race to the lobby.
+The white line defines the circuit edge. Kerbs do not count as part of the circuit, but a car remains legal while at least one wheel still contacts the track. Once all four wheels cross the line, the current lap is deleted. In races, the first two incidents are strikes, strike three shows the black-and-white warning, and strike four plus every later strike adds **5 seconds**. The incident rearms only after a wheel returns within the line, preventing repeated strikes during one excursion. Using recovery also invalidates the current lap. Invalid practice laps do not set a personal best or save a ghost. Cars are ghost cars and do not collide.
 
 Solo practice pauses its simulation while the page is hidden. Multiplayer races continue on the server; input releases on blur and stale input stops applying. Disconnected clients leave the room after 30 seconds, and host control transfers to another driver. A page refresh creates a new session; ask the host to return to the lobby to rejoin.
 
 ## Play with friends
 
 1. Everyone opens the **same server address**.
-2. Enter a driver name, choose 3 or 5 laps, and create a room.
+2. Enter a driver name, choose a setup and race distance, then create a room.
 3. Share the six-character code; other drivers enter it and select Join.
 4. The host starts the race. The host can start a rematch or return everyone to the lobby.
 
@@ -69,9 +70,9 @@ For internet play, run this folder on a public Node.js or container host support
 
 Practice ghosts and personal bests use a new track-specific browser storage key. Old oval records are not mixed with Harbor Run records. Rooms and multiplayer results reset when the server restarts.
 
-- `npm test`: all-circuit geometry, timing, incident penalties, handling systems, stability, AI sprint, Pages asset paths, and track-aware multiplayer integration checks.
+- `npm test`: five-circuit geometry, timing, four-wheel incident penalties, setup handling, stability, AI sprint, Pages asset paths, and track-aware multiplayer integration checks.
 - `npm run build:pages`: creates the static `dist/` folder used by GitHub Pages.
-- `node drive-check.cjs`: three complete clean laps on every circuit, driven using only throttle, brake, and steering by a test driver.
-- `node browser-check.cjs`: optional Windows/Edge browser checks, including desktop/mobile render, controls, ghost persistence and two-player racing. This uses local test ports 3100 and 9235 and saves screenshots under `artifacts/`.
+- `node drive-check.cjs`: complete clean laps driven using only throttle, brake, and steering by a test driver.
+- `node browser-check.cjs`: Windows/Edge browser checks covering all five renders, setup persistence, desktop/mobile controls, ghost persistence, and two-player racing. This uses local test ports 3100 and 9235 and saves screenshots under `artifacts/`.
 
 This remains a casual game prototype. Persistent accounts, public matchmaking, production anti-abuse controls and multi-server room storage are outside this version.

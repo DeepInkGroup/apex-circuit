@@ -4,7 +4,7 @@ const P=require('./public/physics');
 function place(p,s,now){const loc=P.at(s);p.x=loc.x;p.y=loc.y;p.angle=loc.angle;P.step(p,{},0,now);}
 function driveDistance(p,from,to,start=1000){for(let s=from;s<=to;s+=8)place(p,s,start+s*10);place(p,to,start+to*10);}
 test('all circuits are closed, separated, bounded, and have asphalt grids',()=>{
-  assert.deepEqual(Object.keys(P.tracks),['harbor','alpine','sunset']);
+  assert.deepEqual(Object.keys(P.tracks),['harbor','alpine','sunset','metro','emerald']);
   for(const [id,track] of Object.entries(P.tracks)){
     const a=P.at(0,id),b=P.at(track.length,id);assert.ok(Math.hypot(a.x-b.x,a.y-b.y)<.001,id+' closes');
     for(let i=0;i<8;i++){const p=P.spawn(i,id);assert.equal(p.trackId,id);assert.ok(P.nearest(p.x,p.y,id).distance<track.road/2);}
@@ -26,11 +26,16 @@ test('grass excursion invalidates best, and recovery keeps progress without a sh
   const before=p.progress;assert.equal(P.recover(p,5000),true);assert.equal(p.recoveries,1);assert.equal(P.recover(p,5500),false);assert.ok(Math.abs(p.progress-before)<1);
   driveDistance(p,100,P.LENGTH+10,6000);assert.equal(p.lap,1);assert.equal(p.lastValid,false);assert.equal(p.best,null);
 });
-test('sustained track-limit violation adds one 3-second penalty until clean re-entry',()=>{
-  const p=P.spawn(),loc=P.at(300);p.x=loc.x+loc.nx*(P.ROAD/2+30);p.y=loc.y+loc.ny*(P.ROAD/2+30);
-  for(let i=0;i<30;i++)P.step(p,{},1/60,1000+i*17);assert.equal(p.trackLimits,1);assert.equal(p.penalty,3000);assert.equal(p.valid,false);
-  for(let i=0;i<30;i++)P.step(p,{},1/60,2000+i*17);assert.equal(p.penalty,3000);
-  p.x=loc.x;p.y=loc.y;for(let i=0;i<10;i++)P.step(p,{},1/60,3000+i*17);p.x=loc.x+loc.nx*(P.ROAD/2+30);p.y=loc.y+loc.ny*(P.ROAD/2+30);for(let i=0;i<30;i++)P.step(p,{},1/60,4000+i*17);assert.equal(p.penalty,6000);assert.equal(p.trackLimits,2);
+test('four-wheel track limits delete laps and use F1-style race strikes',()=>{
+  const practice=P.spawn(),loc=P.at(300),move=(p,offset,now)=>{p.x=loc.x+loc.nx*offset;p.y=loc.y+loc.ny*offset;p.angle=loc.angle;for(let i=0;i<5;i++)P.step(p,{},1/60,now+i*17);};
+  move(practice,P.ROAD/2+5,1000);assert.ok(practice.wheelsOut>0&&practice.wheelsOut<4);assert.equal(practice.trackLimits,0,'two wheels may remain over the white line');
+  move(practice,P.ROAD/2+12,2000);assert.equal(practice.wheelsOut,4);assert.equal(practice.trackLimits,1);assert.equal(practice.penalty,0);assert.equal(practice.valid,false);
+  const race={...P.spawn(),raceMode:true};for(let strike=1;strike<=5;strike++){move(race,0,3000+strike*1000);move(race,P.ROAD/2+12,3500+strike*1000);assert.equal(race.trackLimits,strike);}
+  assert.equal(race.blackWhite,true);assert.equal(race.penalty,10000,'strike four and every later strike add five seconds');
+});
+test('garage setup is sanitized and materially changes the car',()=>{
+  assert.deepEqual(P.sanitizeSetup({downforce:'rocket',brakeBias:99,differential:2,gearing:'long',compound:'soft'}),{downforce:'balanced',brakeBias:64,differential:30,gearing:'long',compound:'soft'});
+  const short=P.spawn(0,'harbor',{gearing:'short'}),long=P.spawn(0,'harbor',{gearing:'long'});for(let i=0;i<120;i++){P.step(short,{up:true},1/60,1000+i*17);P.step(long,{up:true},1/60,1000+i*17);}assert.ok(short.speed>long.speed,'short gearing accelerates harder');
 });
 test('braking, progressive steering, rear slip, grip and frozen finish',()=>{
   const p=P.spawn();for(let i=0;i<90;i++)P.step(p,{up:true},1/60,1000+i*1000/60);
@@ -52,8 +57,8 @@ test('multiplayer: room settings, stream, authority, start, movement, recovery, 
   const health=await(await fetch(base+'/health')).json();assert.equal(health.version,P.VERSION);
   for(const file of ['/','/renderer.js','/physics.js','/game.js','/style.css'])assert.equal((await fetch(base+file)).status,200);
   assert.equal((await fetch(base+'/constructor')).status,404);
-  const host=(await api('host',{name:'Host',laps:10,trackId:'alpine'})).data;assert.equal(host.room.laps,10);assert.equal(host.room.trackId,'alpine');assert.ok(host.room.players.every(p=>p.trackId==='alpine'));assert.match(host.room.code,/^[A-F0-9]{6}$/);
-  const guest=(await api('join',{name:'Guest',code:host.room.code.toLowerCase()})).data;assert.equal(guest.room.players.length,2);
+  const host=(await api('host',{name:'Host',laps:10,trackId:'metro',setup:{downforce:'high',compound:'soft',brakeBias:61}})).data;assert.equal(host.room.laps,10);assert.equal(host.room.trackId,'metro');assert.ok(host.room.players.every(p=>p.trackId==='metro'));assert.equal(host.room.players[0].setup.downforce,'high');assert.equal(host.room.players[0].setup.brakeBias,61);assert.match(host.room.code,/^[A-F0-9]{6}$/);
+  const guest=(await api('join',{name:'Guest',code:host.room.code.toLowerCase(),setup:{gearing:'long'}})).data;assert.equal(guest.room.players.length,2);assert.equal(guest.room.players[1].setup.gearing,'long');
   assert.equal((await api('join',{code:'XXXXXX'})).status,404);assert.equal((await api('start',{token:guest.token})).status,403);assert.equal((await api('recover',{token:host.token})).status,409);
   const abort=new AbortController();t.after(()=>abort.abort());const stream=await fetch(base+'/events?token='+host.token,{signal:abort.signal});const reader=stream.body.getReader(),decoder=new TextDecoder();let pending='';
   async function state(){for(;;){const boundary=pending.indexOf('\n\n');if(boundary>=0){const msg=pending.slice(0,boundary);pending=pending.slice(boundary+2);if(msg.startsWith('data: '))return JSON.parse(msg.slice(6));continue;}const r=await reader.read();assert.ok(!r.done);pending+=decoder.decode(r.value);}}
