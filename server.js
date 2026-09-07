@@ -5,9 +5,11 @@ const rooms=new Map(),sessions=new Map(),PORT=Number(process.env.PORT)||3000;
 const allowedOrigins=new Set((process.env.ALLOWED_ORIGINS||'https://deepinkgroup.github.io').split(',').map(s=>s.trim()).filter(Boolean));
 const colors=['#b7f76b','#67d9ff','#ff826f','#ffc75b','#c09cff','#ffffff','#64ffc9','#ee91df'];
 function send(res,status,data){res.writeHead(status,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(JSON.stringify(data));}
-function snapshot(r){return {code:r.code,host:r.host,status:r.status,start:r.start,laps:r.laps,trackId:r.trackId,now:Date.now(),engine:P.VERSION,players:[...r.players.values()].map(({token,input,stream,seen,...p})=>p)};}
+function snapshot(r){return {code:r.code,host:r.host,status:r.status,start:r.start,laps:r.laps,trackId:r.trackId,qualifyingEnd:r.qualifyingEnd||0,now:Date.now(),engine:P.VERSION,players:[...r.players.values()].map(({token,input,stream,seen,...p})=>p)};}
 function remove(p){const r=rooms.get(p.code);p.stream?.end();sessions.delete(p.token);if(!r)return;r.players.delete(p.id);if(!r.players.size)rooms.delete(r.code);else if(r.host===p.id)r.host=r.players.keys().next().value;}
 function resetCars(r){let i=0;for(const p of r.players.values()){const setup=p.setup;Object.assign(p,P.spawn(i++,r.trackId,setup),{raceMode:true,input:{}});}}
+function resetQualifyingCars(r){let i=0;for(const p of r.players.values()){const setup=p.setup;Object.assign(p,P.spawn(i++,r.trackId,setup),{raceMode:false,input:{},qualifyingTime:null,gridPosition:null});}}
+function lockQualifyingGrid(r){const order=[...r.players.values()].sort((a,b)=>(a.best??Infinity)-(b.best??Infinity)||a.name.localeCompare(b.name));r.players=new Map(order.map((p,slot)=>{const setup=p.setup,time=p.best??null;Object.assign(p,P.spawn(slot,r.trackId,setup),{raceMode:true,input:{},qualifyingTime:time,gridPosition:slot+1});return[p.id,p];}));r.status='grid';r.start=0;r.qualifyingEnd=0;}
 const server=http.createServer(async(req,res)=>{
   try {
     const url=new URL(req.url,'http://localhost');
@@ -19,7 +21,7 @@ const server=http.createServer(async(req,res)=>{
       if(permitted){res.setHeader('Access-Control-Allow-Origin',origin);res.setHeader('Vary','Origin');res.setHeader('Access-Control-Allow-Methods','GET, POST, OPTIONS');res.setHeader('Access-Control-Allow-Headers','Content-Type');}
     }
     if(req.method==='OPTIONS'){res.writeHead(204);return res.end();}
-    if(url.pathname==='/health')return send(res,200,{app:'apex-circuit',version:P.VERSION,release:'8.0.0',protocol:8,tracks:Object.keys(P.tracks),rooms:rooms.size});
+    if(url.pathname==='/health')return send(res,200,{app:'apex-circuit',version:P.VERSION,release:'9.0.0',protocol:9,tracks:Object.keys(P.tracks),rooms:rooms.size});
     if(url.pathname==='/events'){
       const p=sessions.get(url.searchParams.get('token'));
       if(!p)return send(res,401,{error:'Session expired. Join again.'});
@@ -38,7 +40,7 @@ const server=http.createServer(async(req,res)=>{
           if(rooms.size>=100)return send(res,503,{error:'Server full'});
           let code;do{code=crypto.randomBytes(3).toString('hex').toUpperCase();}while(rooms.has(code));
           const trackId=P.tracks[data.trackId]?data.trackId:'harbor',laps=Math.max(1,Math.min(20,Math.round(Number(data.laps)||3)));
-          r={code,players:new Map(),status:'lobby',start:0,laps,trackId};rooms.set(code,r);
+          r={code,players:new Map(),status:'lobby',start:0,qualifyingEnd:0,laps,trackId};rooms.set(code,r);
         }else{
           r=rooms.get(String(data.code).trim().toUpperCase());
           if(!r)return send(res,404,{error:'Room not found. Check the code.'});
@@ -56,14 +58,18 @@ const server=http.createServer(async(req,res)=>{
       if(action==='input')p.input={up:!!data.up,down:!!data.down,left:!!data.left,right:!!data.right,handbrake:!!data.handbrake};
       else if(action==='start'){
         if(r.host!==p.id)return send(res,403,{error:'Only the host can start.'});
-        if(r.status==='racing')return send(res,409,{error:'Race already running.'});
-        resetCars(r);r.status='racing';r.start=Date.now()+3000;
-        for(const car of r.players.values())car.lapStart=r.start;
+        if(r.status==='racing'||r.status==='qualifying')return send(res,409,{error:'This session is already live.'});
+        if(r.status==='lobby'){resetQualifyingCars(r);r.status='qualifying';r.start=Date.now()+3000;r.qualifyingEnd=r.start+90000;}
+        else if(r.status==='grid'){r.status='racing';r.start=Date.now()+3000;for(const car of r.players.values())car.lapStart=r.start;}
+      }else if(action==='lock'){
+        if(r.host!==p.id)return send(res,403,{error:'Only the host can lock the grid.'});
+        if(r.status!=='qualifying')return send(res,409,{error:'Qualifying is not active.'});
+        lockQualifyingGrid(r);
       }else if(action==='reset'){
         if(r.host!==p.id)return send(res,403,{error:'Only the host can reset.'});
-        r.status='lobby';resetCars(r);
+        r.status='lobby';r.start=0;r.qualifyingEnd=0;resetCars(r);
       }else if(action==='recover'){
-        if(r.status!=='racing'||Date.now()<r.start)return send(res,409,{error:'Recovery is available during a race.'});
+        if(!['racing','qualifying'].includes(r.status)||Date.now()<r.start)return send(res,409,{error:'Recovery is available once the session starts.'});
         if(!P.recover(p,Date.now()))return send(res,409,{error:'Wait a moment before recovering again.'});
       }else if(action==='leave')remove(p);
       else return send(res,404,{error:'Unknown action'});
@@ -84,11 +90,14 @@ setInterval(()=>{
     for(const r of rooms.values()){
       for(const p of r.players.values()){
         if(Date.now()-p.seen>30000){remove(p);continue;}
-        if(r.status==='racing'&&now>=r.start){
+        if(r.status==='qualifying'&&now>=r.start){
+          P.step(p,now-p.seen<600?p.input:{},1/60,now);
+        }else if(r.status==='racing'&&now>=r.start){
           P.step(p,now-p.seen<600?p.input:{},1/60,now);
           if(p.lap>=r.laps){p.finished=true;p.speed=0;p.vx=p.vy=0;p.finish??=now-r.start+p.penalty;}
         }
       }
+      if(r.status==='qualifying'&&now>=r.start&&((r.qualifyingEnd&&now>=r.qualifyingEnd)||[...r.players.values()].every(p=>p.best!==null)))lockQualifyingGrid(r);
       if(r.status==='racing'&&r.players.size&&[...r.players.values()].every(p=>p.finished))r.status='finished';
       if(tick%3===0){const msg='data: '+JSON.stringify(snapshot(r))+'\n\n';for(const p of r.players.values())if(p.stream&&!p.stream.writableNeedDrain)p.stream.write(msg);}
     }

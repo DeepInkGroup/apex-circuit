@@ -2,16 +2,16 @@
 (function(root){
   'use strict';
   const P=typeof module!=='undefined'?require('./physics'):root.Physics;
-  const levels={rookie:{corner:120,max:220},club:{corner:170,max:270},pro:{corner:195,max:285}};
+  const levels={rookie:{corner:122,max:222,look:0,margin:18},club:{corner:174,max:274,look:4,margin:13},pro:{corner:202,max:290,look:8,margin:10}};
   function input(car,difficulty='club',index=0){
     const setup=levels[difficulty]||levels.club,n=P.nearest(car.x,car.y,car.trackId);
-    const target=P.at(n.s+35+Math.abs(car.speed)*.22,car.trackId),desired=Math.atan2(target.y-car.y,target.x-car.x);
+    const target=P.at(n.s+35+Math.abs(car.speed)*.22+setup.look,car.trackId),desired=Math.atan2(target.y-car.y,target.x-car.x);
     const error=Math.atan2(Math.sin(desired-car.angle),Math.cos(desired-car.angle));
     let curvature=0;
-    for(let d=0;d<180;d+=20){const a=P.at(n.s+d,car.trackId),b=P.at(n.s+d+25,car.trackId);curvature=Math.max(curvature,Math.abs(Math.atan2(Math.sin(b.angle-a.angle),Math.cos(b.angle-a.angle)))/25);}
-    const circuitPace={metro:.9,zenith:.94,alpine:.97}[car.trackId]||1,pace=[.96,1,1.025][index%3]*circuitPace;
-    const targetSpeed=Math.max(52,Math.min(setup.max,Math.sqrt(setup.corner/Math.max(.001,curvature))))*pace;
-    return {up:car.speed<targetSpeed,down:car.speed>targetSpeed+12,right:error>.025,left:error<-.025};
+    for(let d=0;d<200;d+=20){const a=P.at(n.s+d,car.trackId),b=P.at(n.s+d+25,car.trackId);curvature=Math.max(curvature,Math.abs(Math.atan2(Math.sin(b.angle-a.angle),Math.cos(b.angle-a.angle)))/25);}
+    const circuitPace={metro:.9,zenith:.94,alpine:.97,marina:.88,obsidian:.91,emerald:.96}[car.trackId]||1,pace=[.96,1,1.025][index%3]*circuitPace;
+    const targetSpeed=Math.max(52,Math.min(setup.max,Math.sqrt(setup.corner/Math.max(.001,curvature))))*pace,brakeBuffer=setup.margin+Math.min(10,curvature*120);
+    return {up:car.speed<targetSpeed,down:car.speed>targetSpeed+brakeBuffer,right:error>.023,left:error<-.023};
   }
   function createSprint(name='Driver',difficulty='club',laps=3,trackId=P.activeTrack,driverSetup=P.setupDefaults){
     const names=[name,'Mika','Jules','Nova'],colors=['#b7f76b','#67d9ff','#ff826f','#c09cff'];

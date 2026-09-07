@@ -34,7 +34,7 @@ test('four-wheel track limits delete laps and use F1-style race strikes',()=>{
   assert.equal(race.blackWhite,true);assert.equal(race.penalty,10000,'strike four and every later strike add five seconds');
 });
 test('garage setup is sanitized and materially changes the car',()=>{
-  assert.deepEqual(P.sanitizeSetup({downforce:'rocket',frontWing:20,rearWing:0,rideHeight:99,camber:2,brakeBias:99,differential:2,gearing:'long',compound:'soft',suspension:99,antiRoll:1,steering:72,tirePressure:18}),{downforce:'balanced',frontWing:11,rearWing:1,rideHeight:45,camber:15,brakeBias:64,differential:30,gearing:'long',compound:'soft',suspension:80,antiRoll:20,steering:70,tirePressure:20});
+  assert.deepEqual(P.sanitizeSetup({downforce:'rocket',frontWing:20,rearWing:0,rideHeight:99,camber:2,engineMode:'warp',fuelLoad:999,brakeBias:99,differential:2,gearing:'long',compound:'soft',suspension:99,antiRoll:1,steering:72,tirePressure:18}),{downforce:'balanced',frontWing:11,rearWing:1,rideHeight:45,camber:15,engineMode:'standard',fuelLoad:100,brakeBias:64,differential:30,gearing:'long',compound:'soft',suspension:80,antiRoll:20,steering:70,tirePressure:20});
   const short=P.spawn(0,'harbor',{gearing:'short'}),long=P.spawn(0,'harbor',{gearing:'long'});for(let i=0;i<120;i++){P.step(short,{up:true},1/60,1000+i*17);P.step(long,{up:true},1/60,1000+i*17);}assert.ok(short.speed>long.speed,'short gearing accelerates harder');
   const soft=P.spawn(0,'harbor',{compound:'soft'}),hard=P.spawn(0,'harbor',{compound:'hard'});for(let i=0;i<600;i++){P.step(soft,{up:true,right:i%180<60},1/60,5000+i*17);P.step(hard,{up:true,right:i%180<60},1/60,5000+i*17);}assert.ok(soft.tireWear<hard.tireWear,'soft tyres trade life for grip');
 });
@@ -59,12 +59,12 @@ test('physics stays stable with a fixed timestep under sustained inputs',()=>{
   const p=P.spawn();for(let i=0;i<6000;i++){P.step(p,{up:true,left:i%300<100,right:i%300>200,handbrake:i%400>350},1/60,1000+i*1000/60);assert.ok([p.x,p.y,p.vx,p.vy,p.angle,p.progress].every(Number.isFinite));}
   assert.ok(P.nearest(p.x,p.y).distance<P.ROAD/2+73);
 });
-test('multiplayer: room settings, stream, authority, start, movement, recovery, reset and host transfer',{timeout:15000},async t=>{
+test('multiplayer: room settings, qualifying, movement, recovery, reset and host transfer',{timeout:15000},async t=>{
   const child=spawn(process.execPath,['server.js'],{env:{...process.env,PORT:'3199'},stdio:['ignore','pipe','pipe']});t.after(()=>child.kill());
   await new Promise((resolve,reject)=>{child.stdout.once('data',resolve);child.once('error',reject);child.once('exit',()=>reject(new Error('Server exited')));});
   const base='http://127.0.0.1:3199';async function api(a,d={}){const r=await fetch(base+'/api/'+a,{method:'POST',body:JSON.stringify(d)});return {status:r.status,data:await r.json()};}
   const health=await(await fetch(base+'/health')).json();assert.equal(health.version,P.VERSION);
-  for(const file of ['/','/renderer.js','/physics.js','/game.js','/style.css'])assert.equal((await fetch(base+file)).status,200);
+  for(const file of ['/','/renderer.js','/physics.js','/game.js','/style.css','/telemetry.css'])assert.equal((await fetch(base+file)).status,200);
   assert.equal((await fetch(base+'/constructor')).status,404);
   const host=(await api('host',{name:'Host',laps:10,trackId:'metro',setup:{downforce:'high',compound:'soft',brakeBias:61}})).data;assert.equal(host.room.laps,10);assert.equal(host.room.trackId,'metro');assert.ok(host.room.players.every(p=>p.trackId==='metro'));assert.equal(host.room.players[0].setup.downforce,'high');assert.equal(host.room.players[0].setup.brakeBias,61);assert.match(host.room.code,/^[A-F0-9]{6}$/);
   const guest=(await api('join',{name:'Guest',code:host.room.code.toLowerCase(),setup:{gearing:'long'}})).data;assert.equal(guest.room.players.length,2);assert.equal(guest.room.players[1].setup.gearing,'long');
@@ -72,12 +72,14 @@ test('multiplayer: room settings, stream, authority, start, movement, recovery, 
   const abort=new AbortController();t.after(()=>abort.abort());const stream=await fetch(base+'/events?token='+host.token,{signal:abort.signal});const reader=stream.body.getReader(),decoder=new TextDecoder();let pending='';
   async function state(){for(;;){const boundary=pending.indexOf('\n\n');if(boundary>=0){const msg=pending.slice(0,boundary);pending=pending.slice(boundary+2);if(msg.startsWith('data: '))return JSON.parse(msg.slice(6));continue;}const r=await reader.read();assert.ok(!r.done);pending+=decoder.decode(r.value);}}
   let s=await state();assert.equal(s.players.length,2);assert.ok(!JSON.stringify(s).includes(host.token));
-  await api('start',{token:host.token});do{s=await state();}while(s.status!=='racing');assert.ok(s.start>s.now);assert.equal(s.players[0].speed,0);
+  await api('start',{token:host.token});do{s=await state();}while(s.status!=='qualifying');assert.ok(s.start>s.now);assert.ok(s.qualifyingEnd>s.start);assert.equal(s.players[0].speed,0);
   assert.equal((await api('join',{code:host.room.code})).status,409);
   await new Promise(r=>setTimeout(r,3100));await api('input',{token:host.token,up:true,handbrake:true});
   do{s=await state();}while(s.now<Date.now()-100);while(s.players[0].speed===0)s=await state();assert.ok(Math.hypot(s.players[0].x-host.room.players[0].x,s.players[0].y-host.room.players[0].y)>.001);assert.ok(s.players[0].grip<1);
   assert.equal((await api('recover',{token:host.token})).status,200);do{s=await state();}while(s.players[0].recoveries!==1);assert.equal(s.players[0].valid,false);
   assert.equal((await api('recover',{token:host.token})).status,409);
+  assert.equal((await api('lock',{token:host.token})).status,200);do{s=await state();}while(s.status!=='grid');assert.deepEqual(s.players.map(p=>p.gridPosition),[1,2]);assert.ok(s.players.every(p=>Object.hasOwn(p,'qualifyingTime')));
+  await api('start',{token:host.token});do{s=await state();}while(s.status!=='racing');assert.ok(s.start>s.now);
   await api('reset',{token:host.token});do{s=await state();}while(s.status!=='lobby');assert.equal(s.players[0].lap,0);assert.equal(s.players[0].recoveries,0);
   await api('leave',{token:host.token});assert.equal((await api('start',{token:guest.token})).status,200);
   await api('leave',{token:guest.token});assert.equal((await api('join',{code:host.room.code})).status,404);abort.abort();
