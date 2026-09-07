@@ -1,6 +1,6 @@
 {
   "name": "apex-circuit",
-  "version": "7.0.0",
+  "version": "8.0.0",
   "private": true,
   "scripts": { "start": "node server.js", "test": "node --test test.js racing.test.js", "build:pages": "node build-pages.cjs" },
   "engines": { "node": ">=20" }

@@ -19,7 +19,7 @@ const server=http.createServer(async(req,res)=>{
       if(permitted){res.setHeader('Access-Control-Allow-Origin',origin);res.setHeader('Vary','Origin');res.setHeader('Access-Control-Allow-Methods','GET, POST, OPTIONS');res.setHeader('Access-Control-Allow-Headers','Content-Type');}
     }
     if(req.method==='OPTIONS'){res.writeHead(204);return res.end();}
-    if(url.pathname==='/health')return send(res,200,{app:'apex-circuit',version:P.VERSION,release:'7.0.0',protocol:7,tracks:Object.keys(P.tracks),rooms:rooms.size});
+    if(url.pathname==='/health')return send(res,200,{app:'apex-circuit',version:P.VERSION,release:'8.0.0',protocol:8,tracks:Object.keys(P.tracks),rooms:rooms.size});
     if(url.pathname==='/events'){
       const p=sessions.get(url.searchParams.get('token'));
       if(!p)return send(res,401,{error:'Session expired. Join again.'});
@@ -70,7 +70,7 @@ const server=http.createServer(async(req,res)=>{
       return send(res,200,{ok:true});
     }
     if(req.method!=='GET')return send(res,405,{error:'Method not allowed'});
-    const files=new Map([['/','index.html'],['/index.html','index.html'],['/style.css','style.css'],['/game.js','game.js'],['/physics.js','physics.js'],['/racing.js','racing.js'],['/config.js','config.js'],['/icon.svg','icon.svg'],['/renderer.js','renderer.js']]);
+    const files=new Map([['/','index.html'],['/index.html','index.html'],['/style.css','style.css'],['/telemetry.css','telemetry.css'],['/game.js','game.js'],['/physics.js','physics.js'],['/racing.js','racing.js'],['/config.js','config.js'],['/icon.svg','icon.svg'],['/renderer.js','renderer.js']]);
     const file=files.get(url.pathname);if(!file)return send(res,404,{error:'Not found'});
     const content=await fs.promises.readFile(path.join(__dirname,'public',file));
     res.writeHead(200,{'Content-Type':file.endsWith('.html')?'text/html; charset=utf-8':file.endsWith('.css')?'text/css':file.endsWith('.svg')?'image/svg+xml':'text/javascript','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});res.end(content);

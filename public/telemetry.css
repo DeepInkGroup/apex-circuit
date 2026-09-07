@@ -1,0 +1,24 @@
+.advanced-setup{border-top:1px solid var(--border);margin-top:12px;padding-top:12px}
+.advanced-setup .eyebrow{font-size:7px;margin-bottom:8px}
+.telemetry-row{display:grid;grid-template-columns:1.1fr .8fr 2.4fr;gap:18px;align-items:center;border-top:1px solid var(--border);padding:16px 0}
+.telemetry-head{display:grid;grid-template-columns:1fr auto;gap:6px 12px;align-items:center}
+.telemetry-head span{grid-column:1/-1;font:8px Consolas;letter-spacing:1px;color:var(--muted)}
+.telemetry-head strong{font:500 22px Consolas;color:var(--ink)}
+.telemetry-head b{font:8px Consolas;color:var(--lime)}
+.telemetry-row.invalid .telemetry-head b{color:var(--orange)}
+.telemetry-sectors{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font:10px Consolas;color:#d0d9cc}
+.telemetry-sectors span,.telemetry-grid span{border-left:1px solid var(--border);padding-left:9px}
+.telemetry-sectors small,.telemetry-grid small{display:block;font:6px Consolas;letter-spacing:1px;color:#778779;margin-bottom:5px}
+.telemetry-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;font:10px Consolas;color:var(--lime)}
+.telemetry-setup{grid-column:1/-1;font:7px Consolas!important;letter-spacing:.8px;color:#778779!important}
+.race-shell:fullscreen{width:100vw;height:100vh;border:0;border-radius:0;display:flex;flex-direction:column;background:#080d0b}
+.race-shell:fullscreen .race-top{height:46px;flex:0 0 46px}
+.race-shell:fullscreen .viewport{flex:1 1 auto;min-height:0;max-height:none;width:100%;aspect-ratio:auto;background:#080d0b}
+.race-shell:fullscreen canvas{width:100%;height:100%;object-fit:contain}
+.race-shell:fullscreen .hud{flex:0 0 105px;padding:10px 3%;background:#111a16}
+.race-shell:fullscreen .hud strong{font-size:26px}
+.race-shell:fullscreen .sector-strip{flex:0 0 38px;padding:7px 3%}
+.race-shell:fullscreen .controls{flex:0 0 38px;padding:6px 3%}
+.race-shell:fullscreen .touch{flex:0 0 auto}
+@media(max-width:850px){.telemetry-row{grid-template-columns:1fr}.telemetry-head{grid-template-columns:1fr auto auto}.telemetry-head span{grid-column:auto}.telemetry-setup{grid-column:auto}.telemetry-grid{grid-template-columns:repeat(3,1fr)}.race-shell:fullscreen .controls{display:none}.race-shell:fullscreen .hud{flex-basis:88px}}
+@media(max-width:520px){.telemetry-grid{grid-template-columns:repeat(2,1fr)}.telemetry-head strong{font-size:18px}.race-shell:fullscreen .race-top{height:42px;flex-basis:42px}.race-shell:fullscreen .hud{flex-basis:76px;padding:7px}.race-shell:fullscreen .sector-strip{flex-basis:34px}.race-shell:fullscreen .touch{padding:7px}}
