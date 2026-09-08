@@ -36,6 +36,10 @@ test('four-wheel track limits delete laps and use F1-style race strikes',()=>{
   const race={...P.spawn(),raceMode:true};for(let strike=1;strike<=5;strike++){move(race,0,3000+strike*1000);move(race,P.ROAD/2+12,3500+strike*1000);assert.equal(race.trackLimits,strike);}
   assert.equal(race.blackWhite,true);assert.equal(race.penalty,10000,'strike four and every later strike add five seconds');
 });
+test('surface grip transitions progressively across asphalt, kerb, and grass',()=>{
+  const loc=P.at(420),sample=offset=>{const p=P.spawn();p.x=loc.x+loc.nx*offset;p.y=loc.y+loc.ny*offset;p.angle=loc.angle;P.step(p,{},0,1000);return p;},asphalt=sample(P.ROAD/2-12),kerb=sample(P.ROAD/2-2),nearGrass=sample(P.ROAD/2+10),deepGrass=sample(P.ROAD/2+24);
+  assert.equal(asphalt.surface,'ASPHALT');assert.equal(kerb.surface,'CURB');assert.equal(nearGrass.surface,'GRASS');assert.ok(asphalt.grip>kerb.grip&&kerb.grip>nearGrass.grip&&nearGrass.grip>deepGrass.grip);
+});
 test('garage setup is sanitized and materially changes the car',()=>{
   assert.deepEqual(P.sanitizeSetup({downforce:'rocket',frontWing:20,rearWing:0,rideHeight:99,camber:2,engineMode:'warp',fuelLoad:999,brakeBias:99,brakePressure:120,differential:2,gearing:'long',compound:'soft',suspension:99,antiRoll:1,steering:72,tirePressure:18,frontToe:-4,rearToe:99,engineBraking:4}),{downforce:'balanced',frontWing:11,rearWing:1,rideHeight:45,camber:15,engineMode:'standard',fuelLoad:100,brakeBias:64,brakePressure:100,differential:30,gearing:'long',compound:'soft',suspension:80,antiRoll:20,steering:70,tirePressure:20,frontToe:0,rearToe:20,engineBraking:20});
   const short=P.spawn(0,'harbor',{gearing:'short'}),long=P.spawn(0,'harbor',{gearing:'long'});for(let i=0;i<120;i++){P.step(short,{up:true},1/60,1000+i*17);P.step(long,{up:true},1/60,1000+i*17);}assert.ok(short.speed>long.speed,'short gearing accelerates harder');

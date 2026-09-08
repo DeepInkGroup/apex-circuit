@@ -10,6 +10,11 @@ Install Node.js 20 or newer. Double-click **START GAME.cmd**, or run `node serve
 
 ## Race Hub update
 
+- **Apex Dynamics handling:** speed-sensitive steering, smoother pedal response, progressive kerb-to-grass grip, and calmer yaw recovery make the car easier to place without removing the setup differences.
+- **Racing-line guide:** the centre dots are replaced by an offset driving line with direction arrows and green push, amber lift, and red braking zones calculated from each circuit's next corner.
+- **Stable cameras:** chase and cinematic cameras now use the visible car position for look-ahead and account for camera rotation when clamping to circuit boundaries, eliminating edge jumps and exposed corners.
+- **Layered sound:** gear-aware engine RPM drives separate engine, harmonic, bass, intake-filter, and road-noise layers, with extra surface sound when the car leaves the asphalt.
+- **Circuit presentation:** every circuit now has defined white track-limit lines, two-sided colour kerbs, deeper runoff, and cleaner asphalt detail.
 - **Guided race-weekend flow:** choose Practice, AI Race, or Online Race, select a Grand Prix, then enter your driver name and engineer the car. Locking the setup opens the circuit and removes the garage controls so the live map becomes the focus.
 - **Four rebuilt circuits:** Neon Metro now runs through fast boulevards and a railway hairpin, Zenith Hills climbs through a new summit sequence, Aurora Icefield combines a polar straight with glacier sweepers, and Obsidian Pass is a new three-stack canyon challenge. Each has new scenery, corner labels, geometry, and a circuit-specific setup target.
 - **Fourteen circuits:** Titan Ridge is a 4.16 km alpine Grand Tour and Vesper Coast is a 3.75 km twilight endurance course. Both are measured from their real simulation paths, exceed 3 km, and add long expert corner sequences to the original twelve destinations.
