@@ -10,10 +10,11 @@ Install Node.js 20 or newer. Double-click **START GAME.cmd**, or run `node serve
 
 ## Race Hub update
 
-- **Event-first home page:** choose Practice, AI Race, or Online Race before configuring the event. The selected format reveals its circuit, distance, opponent, server, and garage controls while the home page stays focused and easy to scan.
+- **Guided race-weekend flow:** choose Practice, AI Race, or Online Race, select a Grand Prix, then enter your driver name and engineer the car. Locking the setup opens the circuit and removes the garage controls so the live map becomes the focus.
+- **Four rebuilt circuits:** Neon Metro now runs through fast boulevards and a railway hairpin, Zenith Hills climbs through a new summit sequence, Aurora Icefield combines a polar straight with glacier sweepers, and Obsidian Pass is a new three-stack canyon challenge. Each has new scenery, corner labels, geometry, and a circuit-specific setup target.
 - **Fourteen circuits:** Titan Ridge is a 4.16 km alpine Grand Tour and Vesper Coast is a 3.75 km twilight endurance course. Both are measured from their real simulation paths, exceed 3 km, and add long expert corner sequences to the original twelve destinations.
 - **Qualifying and grid:** online rooms run qualifying before the race. The fastest valid lap takes pole, the grid locks in qualifying order, and the host releases the field from that grid.
-- **Intelligent race engineering:** the engineer creates a tailored setup for each circuit. Drivers can still choose Qualifying, Balanced, Race, or Wet presets and tune nine parameters. Live analysis reports top speed, cornering, stability, tyre life, and understeer/neutral/rotation balance.
+- **Intelligent race engineering:** the engineer creates a tailored setup for each circuit. Drivers can choose Qualifying, Balanced, Race, or Wet presets and tune nineteen parameters, including front/rear wings, toe, brake pressure, engine braking, ride height, camber, differential, gearing, suspension, and tyres. Live analysis reports top speed, cornering, stability, tyre life, and understeer/neutral/rotation balance.
 - **PlayStation and Xbox controllers:** connect by USB or Bluetooth and use the left stick to steer. R2/RT controls throttle, L2/LT controls brake, Cross/Square or A/X controls the handbrake, and Triangle/Y recovers the car. Analog stick and trigger travel feed directly into Practice, AI Race, and Online Race.
 - **Setup diagnostics:** the garage shows wing levels, platform height, camber, balance, track-match score, pace focus, and an estimated stint window. The circuit engineer produces a 100% track-matched baseline that remains fully adjustable.
 - **Tyre degradation:** compounds now trade peak grip for life. Pressure, speed, slip, and compound affect wear; worn tyres progressively reduce available grip and the HUD reports remaining tyre life.
@@ -89,7 +90,7 @@ Render's Node web-service flow uses a build command, start command, environment 
 ### Play with friends on your network
 
 1. Everyone opens the **same server address**.
-2. Enter a driver name, choose a setup and race distance, then create a room.
+2. Choose Online Race, select the Grand Prix, enter a driver name, choose the distance and setup, then lock the setup and create a room from the circuit screen.
 3. Share the six-character code; other drivers enter it and select Join.
 4. The host starts qualifying. Each driver sets a clean lap, the fastest valid lap takes pole, then the host locks the grid and starts the race.
 
