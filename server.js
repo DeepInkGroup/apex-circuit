@@ -21,7 +21,7 @@ const server=http.createServer(async(req,res)=>{
       if(permitted){res.setHeader('Access-Control-Allow-Origin',origin);res.setHeader('Vary','Origin');res.setHeader('Access-Control-Allow-Methods','GET, POST, OPTIONS');res.setHeader('Access-Control-Allow-Headers','Content-Type');}
     }
     if(req.method==='OPTIONS'){res.writeHead(204);return res.end();}
-    if(url.pathname==='/health')return send(res,200,{app:'apex-circuit',version:P.VERSION,release:'9.0.0',protocol:9,tracks:Object.keys(P.tracks),rooms:rooms.size});
+    if(url.pathname==='/health')return send(res,200,{app:'apex-circuit',version:P.VERSION,release:'10.0.0',protocol:10,tracks:Object.keys(P.tracks),rooms:rooms.size});
     if(url.pathname==='/events'){
       const p=sessions.get(url.searchParams.get('token'));
       if(!p)return send(res,401,{error:'Session expired. Join again.'});
@@ -55,7 +55,7 @@ const server=http.createServer(async(req,res)=>{
       }
       const p=sessions.get(data.token);if(!p)return send(res,401,{error:'Session expired. Join again.'});
       p.seen=Date.now();const r=rooms.get(p.code);
-      if(action==='input')p.input={up:!!data.up,down:!!data.down,left:!!data.left,right:!!data.right,handbrake:!!data.handbrake};
+      if(action==='input'){const analog=(value,min=0,max=1)=>Math.max(min,Math.min(max,Number(value)||0));p.input={up:!!data.up,down:!!data.down,left:!!data.left,right:!!data.right,steer:data.steer==null?undefined:analog(data.steer,-1,1),throttle:data.throttle==null?undefined:analog(data.throttle),brake:data.brake==null?undefined:analog(data.brake),handbrake:!!data.handbrake};}
       else if(action==='start'){
         if(r.host!==p.id)return send(res,403,{error:'Only the host can start.'});
         if(r.status==='racing'||r.status==='qualifying')return send(res,409,{error:'This session is already live.'});

@@ -38,6 +38,11 @@ test('garage setup is sanitized and materially changes the car',()=>{
   const short=P.spawn(0,'harbor',{gearing:'short'}),long=P.spawn(0,'harbor',{gearing:'long'});for(let i=0;i<120;i++){P.step(short,{up:true},1/60,1000+i*17);P.step(long,{up:true},1/60,1000+i*17);}assert.ok(short.speed>long.speed,'short gearing accelerates harder');
   const soft=P.spawn(0,'harbor',{compound:'soft'}),hard=P.spawn(0,'harbor',{compound:'hard'});for(let i=0;i<600;i++){P.step(soft,{up:true,right:i%180<60},1/60,5000+i*17);P.step(hard,{up:true,right:i%180<60},1/60,5000+i*17);}assert.ok(soft.tireWear<hard.tireWear,'soft tyres trade life for grip');
 });
+test('analog controller inputs preserve proportional steering and trigger pressure',()=>{
+  const half=P.spawn(),full=P.spawn();
+  for(let i=0;i<36;i++){P.step(half,{steer:.28,throttle:.45},1/60,1000+i*17);P.step(full,{steer:.82,throttle:1},1/60,1000+i*17);}
+  assert.ok(full.throttle>half.throttle+.3);assert.ok(Math.abs(full.steer)>Math.abs(half.steer)+.3);assert.ok(full.speed>half.speed+30);
+});
 test('lap telemetry records speed, pedal use, slip, and tyre consumption',()=>{
   const p=P.spawn();p.started=true;p.telemetry={maxSpeed:0,speedSum:0,samples:0,brakeTime:0,throttleTime:0,maxSlip:0,startWear:p.tireWear};
   for(let i=0;i<150;i++)P.step(p,{up:true,right:i>90,down:i>120},1/60,1000+i*17);

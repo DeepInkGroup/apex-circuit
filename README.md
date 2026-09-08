@@ -2,7 +2,7 @@
 
 A self-contained browser racing game with twelve circuits, an intelligent race engineer, solo practice, AI races, qualifying-based online rooms, and multiplayer for up to eight drivers. No external assets, API keys, or runtime npm dependencies.
 
-The static build is published at `https://deepinkgroup.github.io/apex-circuit/`. GitHub Pages runs every circuit, time attack, AI rivals, ghosts, medals, lap history, touch controls, and the follow camera in the browser. Online rooms need a running server because GitHub Pages cannot execute Node.js; connect the Pages UI to a deployed `server.js` address from the Online rooms tab.
+The static build is published at `https://deepinkgroup.github.io/apex-circuit/`. GitHub Pages runs every circuit, time attack, AI rivals, ghosts, medals, lap history, keyboard, touch and PlayStation controller input, and the follow camera in the browser. Online rooms need a running server because GitHub Pages cannot execute Node.js; connect the Pages UI to a deployed `server.js` address from the Online rooms tab.
 
 ## Start
 
@@ -14,6 +14,8 @@ Install Node.js 20 or newer. Double-click **START GAME.cmd**, or run `node serve
 - **Twelve circuits:** Aurora Icefield, Sakura Circuit, Marina Grand Prix, Crimson Caldera, and Obsidian Pass join the original destinations. Every circuit has its own geometry, colors, atmosphere, personal bests, ghosts, and lap history.
 - **Qualifying and grid:** online rooms run qualifying before the race. The fastest valid lap takes pole, the grid locks in qualifying order, and the host releases the field from that grid.
 - **Intelligent race engineering:** the engineer creates a tailored setup for each circuit. Drivers can still choose Qualifying, Balanced, Race, or Wet presets and tune nine parameters. Live analysis reports top speed, cornering, stability, tyre life, and understeer/neutral/rotation balance.
+- **PS4 and PS5 controllers:** connect by USB or Bluetooth, steer with the left stick, use R2 for throttle, L2 for brake, Cross or Square for the handbrake, and Triangle to recover. Analog stick and trigger travel feed directly into the shared handling model in Practice, AI Race, and Online Race.
+- **Setup car visual:** the garage now shows the front and rear wing level, platform height, camber, and live balance around a top-down car model. The fullscreen follow view includes a larger circuit map with sector lines, start line, and live driver markers.
 - **Tyre degradation:** compounds now trade peak grip for life. Pressure, speed, slip, and compound affect wear; worn tyres progressively reduce available grip and the HUD reports remaining tyre life.
 - **Correct starting grid:** all eight grid slots alternate sides in four rows, remain fully behind the timing line, and keep safe longitudinal and lateral separation on every circuit.
 - **Improved handling:** suspension, anti-roll stiffness, steering ratio, tyre pressure, and differential now shape turn-in, lateral grip, yaw response, kerb control, wheelspin, and the tyre temperature window. Handbrake rotation is progressive and retains more forward momentum.
@@ -50,7 +52,7 @@ Install Node.js 20 or newer. Double-click **START GAME.cmd**, or run `node serve
 | G | Personal-best ghost |
 | M | Engine sound |
 
-Touch controls appear on phones and touch devices. Buttons in the circuit toolbar also control the camera, guide, ghost, sound and fullscreen.
+Touch controls appear on phones and touch devices. DualShock 4 and DualSense controllers work through the browser Gamepad API after any controller button is pressed. Buttons in the circuit toolbar also control the camera, guide, ghost, sound and fullscreen.
 
 ## Timing and track limits
 
@@ -98,9 +100,9 @@ For another host, run this folder on a public Node.js or container service suppo
 
 Practice ghosts and personal bests use a new track-specific browser storage key. Old oval records are not mixed with Harbor Run records. Rooms and multiplayer results reset when the server restarts.
 
-- `npm test`: twelve-circuit geometry, starting-grid placement, timing, tyre degradation, four-wheel incident penalties, setup handling, stability, AI sprint, qualifying/grid multiplayer flow, and Pages asset paths.
+- `npm test`: twelve-circuit geometry, starting-grid placement, timing, tyre degradation, four-wheel incident penalties, analog controller handling, setup handling, stability, AI sprint, qualifying/grid multiplayer flow, and Pages asset paths.
 - `npm run build:pages`: creates the static `dist/` folder used by GitHub Pages.
 - `node drive-check.cjs`: complete clean laps driven using only throttle, brake, and steering by a test driver.
-- `node browser-check.cjs`: Windows/Edge browser checks covering the event-first home page, all twelve renders, race-engineer setups, tyre analysis, desktop/mobile controls, ghost persistence, qualifying, locked grids, and two-player racing. This uses local test ports 3100 and 9235 and saves screenshots under `artifacts/`.
+- `node browser-check.cjs`: Windows/Edge browser checks covering the event-first home page, hidden header status, DualSense analog input, the live setup model, fullscreen circuit map, all twelve renders, desktop/mobile controls, ghost persistence, qualifying, locked grids, and two-player racing. This uses local test ports 3100 and 9235 and saves screenshots under `artifacts/`.
 
 This remains a casual game prototype. Persistent accounts, public matchmaking, production anti-abuse controls and multi-server room storage are outside this version.

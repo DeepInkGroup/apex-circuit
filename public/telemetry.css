@@ -1,5 +1,25 @@
 .advanced-setup{border-top:1px solid var(--border);margin-top:12px;padding-top:12px}
 .advanced-setup .eyebrow{font-size:7px;margin-bottom:8px}
+header nav{margin-left:auto}
+.setup-panel{position:relative;overflow:hidden;background:radial-gradient(circle at 50% 21%,#31503988,transparent 32%),linear-gradient(145deg,#1b2a20,#101914);border-color:#40583f}
+.setup-panel:before{content:'RACE ENGINEERING / LIVE MODEL';position:absolute;right:-33px;top:78px;transform:rotate(90deg);font:6px Consolas;letter-spacing:1.6px;color:#8ba27e55}
+.setup-car-visual{--front-wing:18px;--rear-wing:18px;--balance:0deg;position:relative;height:142px;margin:7px 0 12px;border:1px solid #3c523b;border-radius:7px;background:linear-gradient(90deg,#0c1511aa,#1c3023aa 50%,#0c1511aa),repeating-linear-gradient(90deg,transparent 0 28px,#d9f1c508 29px 30px);overflow:hidden}
+.setup-car-visual:before{content:'';position:absolute;left:50%;top:15px;width:29px;height:112px;transform:translateX(-50%);border-radius:42% 42% 24% 24%;background:linear-gradient(90deg,#46604b,#edf4df 48%,#9db68d);box-shadow:0 0 25px #b7f76b22}
+.setup-car-visual:after{content:'';position:absolute;left:50%;top:7px;height:128px;border-left:1px dashed #b7f76b26}
+.setup-axle{position:absolute;z-index:2;left:50%;transform:translateX(-50%);height:13px;background:#101714;border:2px solid #cbd8c2;border-radius:2px;transition:width .2s ease;box-shadow:0 5px 14px #0007}
+.setup-axle:before,.setup-axle:after{content:'';position:absolute;top:-6px;width:8px;height:22px;border-radius:2px;background:#070b09;border:1px solid #516052}
+.setup-axle:before{left:6px}.setup-axle:after{right:6px}
+.setup-axle span{position:absolute;left:50%;top:17px;transform:translateX(-50%);white-space:nowrap;font:6px Consolas;letter-spacing:1px;color:#b7f76b}
+.setup-front{top:15px;width:calc(88px + var(--front-wing))}
+.setup-rear{bottom:14px;width:calc(88px + var(--rear-wing))}
+.setup-rear span{top:auto;bottom:17px}
+.setup-cockpit{position:absolute;z-index:3;left:50%;top:50%;transform:translate(-50%,-50%);display:grid;place-items:center;width:44px;height:48px;border-radius:55% 55% 35% 35%;background:#152521;border:1px solid #b7f76b88;color:var(--lime)}
+.setup-cockpit b{font:800 12px 'Segoe UI'}.setup-cockpit small{position:absolute;top:50px;width:130px;text-align:center;font:6px Consolas;letter-spacing:1px;color:#9aab99}
+.setup-flow{position:absolute;top:50%;width:34%;height:2px;background:linear-gradient(90deg,transparent,var(--lime));opacity:.44}
+.setup-flow-left{left:4%;transform:rotate(var(--balance))}.setup-flow-right{right:4%;transform:scaleX(-1) rotate(var(--balance))}
+.setup-grid label{padding:9px;border:1px solid #304334;border-radius:5px;background:#0d1712aa;margin:4px 0}
+.setup-grid label output{float:right;color:var(--lime);font-family:Consolas}.setup-grid input[type=range]{padding:7px 0;border:0;background:transparent;accent-color:var(--lime)}
+.gamepad-status{margin-left:0!important;color:var(--lime);font:7px Consolas!important;letter-spacing:.7px}
 .telemetry-row{display:grid;grid-template-columns:1.1fr .8fr 2.4fr;gap:18px;align-items:center;border-top:1px solid var(--border);padding:16px 0}
 .telemetry-head{display:grid;grid-template-columns:1fr auto;gap:6px 12px;align-items:center}
 .telemetry-head span{grid-column:1/-1;font:8px Consolas;letter-spacing:1px;color:var(--muted)}
@@ -13,12 +33,14 @@
 .telemetry-setup{grid-column:1/-1;font:7px Consolas!important;letter-spacing:.8px;color:#778779!important}
 .race-shell:fullscreen{width:100vw;height:100vh;border:0;border-radius:0;display:flex;flex-direction:column;background:#080d0b}
 .race-shell:fullscreen .race-top{height:46px;flex:0 0 46px}
-.race-shell:fullscreen .viewport{flex:1 1 auto;min-height:0;max-height:none;width:100%;aspect-ratio:auto;background:#263f35}
+.race-shell:fullscreen .viewport{flex:1 1 auto;min-height:0;max-height:none;width:100%;aspect-ratio:auto;background:#263f35;isolation:isolate}
 .race-shell:fullscreen canvas{width:100%;height:100%;object-fit:cover;object-position:center}
+.race-shell:fullscreen .track-overlay{inset:22px 28px auto}.race-shell:fullscreen .bottom-overlay{inset:auto 28px 18px}
+.race-shell:fullscreen .condition{margin-right:min(29vw,410px)}
 .race-shell:fullscreen .hud{flex:0 0 105px;padding:10px 3%;background:#111a16}
 .race-shell:fullscreen .hud strong{font-size:26px}
 .race-shell:fullscreen .sector-strip{flex:0 0 38px;padding:7px 3%}
 .race-shell:fullscreen .controls{flex:0 0 38px;padding:6px 3%}
 .race-shell:fullscreen .touch{flex:0 0 auto}
-@media(max-width:850px){.telemetry-row{grid-template-columns:1fr}.telemetry-head{grid-template-columns:1fr auto auto}.telemetry-head span{grid-column:auto}.telemetry-setup{grid-column:auto}.telemetry-grid{grid-template-columns:repeat(3,1fr)}.race-shell:fullscreen .controls{display:none}.race-shell:fullscreen .hud{flex-basis:88px}}
+@media(max-width:850px){.telemetry-row{grid-template-columns:1fr}.telemetry-head{grid-template-columns:1fr auto auto}.telemetry-head span{grid-column:auto}.telemetry-setup{grid-column:auto}.telemetry-grid{grid-template-columns:repeat(3,1fr)}.race-shell:fullscreen .controls{display:none}.race-shell:fullscreen .hud{flex-basis:88px}.setup-car-visual{height:124px}}
 @media(max-width:520px){.telemetry-grid{grid-template-columns:repeat(2,1fr)}.telemetry-head strong{font-size:18px}.race-shell:fullscreen .race-top{height:42px;flex-basis:42px}.race-shell:fullscreen .hud{flex-basis:76px;padding:7px}.race-shell:fullscreen .sector-strip{flex-basis:34px}.race-shell:fullscreen .touch{padding:7px}}
