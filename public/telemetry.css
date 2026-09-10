@@ -3,21 +3,21 @@
 header nav{margin-left:auto}
 .setup-panel{position:relative;overflow:hidden;background:radial-gradient(circle at 50% 21%,#31503988,transparent 32%),linear-gradient(145deg,#1b2a20,#101914);border-color:#40583f}
 .setup-panel:before{content:'RACE ENGINEERING / LIVE MODEL';position:absolute;right:-33px;top:78px;transform:rotate(90deg);font:6px Consolas;letter-spacing:1.6px;color:#8ba27e55}
-.setup-car-visual{--front-wing:18px;--rear-wing:18px;--balance:0deg;position:relative;height:142px;margin:7px 0 12px;border:1px solid #3c523b;border-radius:7px;background:linear-gradient(90deg,#0c1511aa,#1c3023aa 50%,#0c1511aa),repeating-linear-gradient(90deg,transparent 0 28px,#d9f1c508 29px 30px);overflow:hidden}
-.setup-car-visual:before{content:'';position:absolute;left:50%;top:15px;width:29px;height:112px;transform:translateX(-50%);border-radius:42% 42% 24% 24%;background:linear-gradient(90deg,#46604b,#edf4df 48%,#9db68d);box-shadow:0 0 25px #b7f76b22}
-.setup-car-visual:after{content:'';position:absolute;left:50%;top:7px;height:128px;border-left:1px dashed #b7f76b26}
+.setup-car-visual{--front-wing:18px;--rear-wing:18px;--front-toe:0deg;--front-toe-neg:0deg;--rear-toe:0deg;--rear-toe-neg:0deg;--balance:0deg;position:relative;height:164px;margin:7px 0 12px;border:1px solid #3c523b;border-radius:7px;background:radial-gradient(circle at 50% 50%,#b7f76b13,transparent 32%),linear-gradient(90deg,#0c1511aa,#1c3023aa 50%,#0c1511aa),repeating-linear-gradient(90deg,transparent 0 28px,#d9f1c508 29px 30px);overflow:hidden}
+.setup-car-visual:before{content:'';position:absolute;left:50%;top:18px;width:31px;height:128px;transform:translateX(-50%);border-radius:45% 45% 22% 22%;background:linear-gradient(90deg,#3f5945,#f2f7e8 46%,#9bb68d 73%,#344b3c);box-shadow:0 0 32px #b7f76b28}
+.setup-car-visual:after{content:'';position:absolute;left:50%;top:8px;height:148px;border-left:1px dashed #b7f76b32}
 .setup-axle{position:absolute;z-index:2;left:50%;transform:translateX(-50%);height:13px;background:#101714;border:2px solid #cbd8c2;border-radius:2px;transition:width .2s ease;box-shadow:0 5px 14px #0007}
-.setup-axle:before,.setup-axle:after{content:'';position:absolute;top:-6px;width:8px;height:22px;border-radius:2px;background:#070b09;border:1px solid #516052}
+.setup-axle:before,.setup-axle:after{content:'';position:absolute;top:-7px;width:9px;height:25px;border-radius:3px;background:linear-gradient(90deg,#050806,#1c251d,#050806);border:1px solid #6c7b6b;box-shadow:inset 0 0 0 2px #050806;transform-origin:center;transition:transform .2s ease}
 .setup-axle:before{left:6px}.setup-axle:after{right:6px}
-.setup-axle span{position:absolute;left:50%;top:17px;transform:translateX(-50%);white-space:nowrap;font:6px Consolas;letter-spacing:1px;color:#b7f76b}
-.setup-front{top:15px;width:calc(88px + var(--front-wing))}
-.setup-rear{bottom:14px;width:calc(88px + var(--rear-wing))}
-.setup-rear span{top:auto;bottom:17px}
+.setup-axle span{position:absolute;left:50%;top:20px;transform:translateX(-50%);white-space:nowrap;font:7px Consolas;letter-spacing:.8px;color:#b7f76b;background:#0a120ee8;padding:2px 5px;border-radius:2px}
+.setup-front{top:18px;width:calc(92px + var(--front-wing))}.setup-front:before{transform:rotate(var(--front-toe))}.setup-front:after{transform:rotate(calc(0deg - var(--front-toe)))}
+.setup-rear{bottom:17px;width:calc(92px + var(--rear-wing))}.setup-rear:before{transform:rotate(var(--rear-toe))}.setup-rear:after{transform:rotate(calc(0deg - var(--rear-toe)))}
+.setup-rear span{top:auto;bottom:20px}
 .setup-cockpit{position:absolute;z-index:3;left:50%;top:50%;transform:translate(-50%,-50%);display:grid;place-items:center;width:44px;height:48px;border-radius:55% 55% 35% 35%;background:#152521;border:1px solid #b7f76b88;color:var(--lime)}
 .setup-cockpit b{font:800 12px 'Segoe UI'}.setup-cockpit small{position:absolute;top:50px;width:130px;text-align:center;font:6px Consolas;letter-spacing:1px;color:#9aab99}
 .setup-flow{position:absolute;top:50%;width:34%;height:2px;background:linear-gradient(90deg,transparent,var(--lime));opacity:.44}
 .setup-flow-left{left:4%;transform:rotate(var(--balance))}.setup-flow-right{right:4%;transform:scaleX(-1) rotate(var(--balance))}
-.setup-diagnostics{display:grid;grid-template-columns:1.25fr 1fr 1fr;gap:6px;margin:0 0 11px}.setup-diagnostics>span{min-width:0;padding:8px 7px;border:1px solid #354a38;border-radius:4px;background:#0a1410cc}.setup-diagnostics small{display:block;font:6px Consolas;letter-spacing:.8px;color:#7f927f;margin-bottom:5px}.setup-diagnostics b{display:block;overflow:hidden;text-overflow:ellipsis;font:700 8px Consolas;white-space:nowrap;color:#e5eddf}.setup-diagnostics span:first-child b{color:var(--lime)}.setup-diagnostics i{display:block;width:100%;height:2px;margin-top:6px;background:#2d3d30;border-radius:0}.setup-diagnostics em{display:block;height:2px;background:var(--lime);transition:width .2s ease}
+.setup-diagnostics{display:grid;grid-template-columns:1.25fr repeat(3,1fr);gap:6px;margin:0 0 11px}.setup-diagnostics>span{min-width:0;padding:8px 7px;border:1px solid #354a38;border-radius:4px;background:#0a1410cc}.setup-diagnostics small{display:block;font:6px Consolas;letter-spacing:.8px;color:#7f927f;margin-bottom:5px}.setup-diagnostics b{display:block;overflow:hidden;text-overflow:ellipsis;font:700 8px Consolas;white-space:nowrap;color:#e5eddf}.setup-diagnostics span:first-child b,.setup-diagnostics span:last-child b{color:var(--lime)}.setup-diagnostics i{display:block;width:100%;height:2px;margin-top:6px;background:#2d3d30;border-radius:0}.setup-diagnostics em{display:block;height:2px;background:var(--lime);transition:width .2s ease}
 .setup-grid label{padding:9px;border:1px solid #304334;border-radius:5px;background:#0d1712aa;margin:4px 0}
 .setup-grid label output{float:right;color:var(--lime);font-family:Consolas}.setup-grid input[type=range]{padding:7px 0;border:0;background:transparent;accent-color:var(--lime)}
 .gamepad-status{margin-left:0!important;color:var(--lime);font:7px Consolas!important;letter-spacing:.7px}

@@ -21,7 +21,7 @@ const server=http.createServer(async(req,res)=>{
       if(permitted){res.setHeader('Access-Control-Allow-Origin',origin);res.setHeader('Vary','Origin');res.setHeader('Access-Control-Allow-Methods','GET, POST, OPTIONS');res.setHeader('Access-Control-Allow-Headers','Content-Type');}
     }
     if(req.method==='OPTIONS'){res.writeHead(204);return res.end();}
-    if(url.pathname==='/health')return send(res,200,{app:'apex-circuit',version:P.VERSION,release:'13.0.0',protocol:13,tracks:Object.keys(P.tracks),rooms:rooms.size});
+    if(url.pathname==='/health')return send(res,200,{app:'apex-circuit',version:P.VERSION,release:'14.0.0',protocol:14,tracks:Object.keys(P.tracks),rooms:rooms.size});
     if(url.pathname==='/events'){
       const p=sessions.get(url.searchParams.get('token'));
       if(!p)return send(res,401,{error:'Session expired. Join again.'});

@@ -24,8 +24,10 @@ test('penalties affect classification and DNF is last',()=>{
 });
 test('Pages build has relative assets and disables the implicit local backend',()=>{
   const html=fs.readFileSync(path.join(__dirname,'public/index.html'),'utf8');
+  const renderer=fs.readFileSync(path.join(__dirname,'public/renderer.js'),'utf8');
   const sources=[...html.matchAll(/(?:src|href)="(\.\/[^"#]*)"/g)].map(m=>m[1]);assert.ok(sources.length>=7);
   for(const file of sources){if(file!=='./')assert.ok(fs.existsSync(path.join(__dirname,'public',file)),file+' exists');}
   assert.ok(!/(?:src|href)="\/(?!\/)/.test(html));
+  assert.doesNotMatch(renderer,/stroke\(g,15,'#eee9dc'/,'rounded pink-and-white edge markers stay removed');assert.doesNotMatch(renderer,/drawPaddock/,'repeated trackside colour blocks stay removed');assert.match(renderer,/stroke\(g,3,'#f5f4e8dd'/,'continuous white track boundary remains');
   require('./build-pages.cjs');const context={window:{}};vm.runInNewContext(fs.readFileSync(path.join(__dirname,'dist/config.js'),'utf8'),context);assert.equal(context.window.APEX_CONFIG.static,true);assert.equal(context.window.APEX_CONFIG.serverUrl,'');
 });
