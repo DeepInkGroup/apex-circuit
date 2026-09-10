@@ -1,8 +1,8 @@
 # Deep Racing — Race Hub
 
-A self-contained browser racing game with fourteen circuits, an intelligent race engineer, solo practice, AI races, qualifying-based online rooms, and multiplayer for up to eight drivers. No external assets, API keys, or runtime npm dependencies.
+A self-contained browser racing game with sixteen circuits, an intelligent race engineer, solo practice, AI races, qualifying-based online rooms, and multiplayer for up to eight drivers. No external assets, API keys, or runtime npm dependencies.
 
-The static build is published at `https://deepinkgroup.github.io/apex-circuit/`. GitHub Pages runs every circuit, time attack, AI rivals, ghosts, medals, lap history, keyboard, touch, PlayStation and Xbox controller input, and all three cameras in the browser. Online rooms need a running server because GitHub Pages cannot execute Node.js; connect the Pages UI to a deployed `server.js` address from the Online rooms tab.
+The static build is published at `https://deepinkgroup.github.io/apex-circuit/`. GitHub Pages runs every circuit, time attack, AI rivals, ghosts, medals, lap history, keyboard, touch, PlayStation and Xbox controller input, and all four cameras in the browser. Online rooms need a running server because GitHub Pages cannot execute Node.js; connect the Pages UI to a deployed `server.js` address from the Online rooms tab.
 
 ## Start
 
@@ -17,9 +17,12 @@ Install Node.js 20 or newer. Double-click **START GAME.cmd**, or run `node serve
 - **Clean circuit edges:** the repeated rounded colour-and-white edge markers are removed from every circuit while the continuous white track-limit boundary remains clearly visible.
 - **Tyre Lab:** front and rear pressures are tuned independently in 0.1 PSI steps. Each axle now develops its own temperature, wear, and available grip from steering, braking, throttle, slip, compound, pressure, camber, and toe.
 - **Brake cooling:** adjustable brake ducts trade straight-line efficiency for cooling. Sustained heat can now produce brake fade, and live car status warns the driver when the brakes overheat.
+- **Onboard camera:** the fourth camera locks the circuit to the car heading, looks down the next section of road, hides the external player car, and adds an animated nose, front wheels, steering wheel, gear, and speed display.
+- **Race HUD:** a new timing and driver display gives gear and speed more space, adds live throttle/brake traces, exposes brake temperature, and groups tyre, damage, and track-limit status into clearer cards.
+- **Two new worlds:** Copper Works is an orange-lit industrial sprint around foundries, tanks, and pipelines. Lotus Delta is a turquoise monsoon course across water channels and luminous wetland scenery.
 - **Guided race-weekend flow:** choose Practice, AI Race, or Online Race, select a Grand Prix, then enter your driver name and engineer the car. Locking the setup opens the circuit and removes the garage controls so the live map becomes the focus.
 - **Four rebuilt circuits:** Neon Metro now runs through fast boulevards and a railway hairpin, Zenith Hills climbs through a new summit sequence, Aurora Icefield combines a polar straight with glacier sweepers, and Obsidian Pass is a new three-stack canyon challenge. Each has new scenery, corner labels, geometry, and a circuit-specific setup target.
-- **Fourteen circuits:** Titan Ridge is a 4.16 km alpine Grand Tour and Vesper Coast is a 3.75 km twilight endurance course. Both are measured from their real simulation paths, exceed 3 km, and add long expert corner sequences to the original twelve destinations.
+- **Sixteen circuits:** Titan Ridge and Vesper Coast remain the long expert Grand Tours, joined by the industrial Copper Works sprint and the flowing Lotus Delta monsoon course.
 - **Qualifying and grid:** online rooms run qualifying before the race. The fastest valid lap takes pole, the grid locks in qualifying order, and the host releases the field from that grid.
 - **Intelligent race engineering:** the engineer creates a tailored setup for each circuit. Drivers can choose Qualifying, Balanced, Race, or Wet presets and tune twenty-one parameters, including front/rear wings, individual axle pressures, toe, brake pressure and cooling, engine braking, ride height, camber, differential, gearing, suspension, and tyres. Live analysis reports top speed, cornering, stability, tyre life, and understeer/neutral/rotation balance.
 - **PlayStation and Xbox controllers:** connect by USB or Bluetooth and use the left stick to steer. R2/RT controls throttle, L2/LT controls brake, Cross/Square or A/X controls the handbrake, and Triangle/Y recovers the car. Analog stick and trigger travel feed directly into Practice, AI Race, and Online Race.
@@ -109,9 +112,9 @@ For another host, run this folder on a public Node.js or container service suppo
 
 Practice ghosts and personal bests use a new track-specific browser storage key. Old oval records are not mixed with Harbor Run records. Rooms and multiplayer results reset when the server restarts.
 
-- `npm test`: fourteen-circuit geometry and distance, starting-grid placement, timing, tyre degradation, four-wheel incident penalties, analog controller handling, setup handling, stability, AI sprint, qualifying/grid multiplayer flow, and Pages asset paths.
+- `npm test`: sixteen-circuit geometry and distance, starting-grid placement, timing, tyre degradation, four-wheel incident penalties, analog controller handling, setup handling, stability, AI sprint, qualifying/grid multiplayer flow, and Pages asset paths.
 - `npm run build:pages`: creates the static `dist/` folder used by GitHub Pages.
 - `node drive-check.cjs`: complete clean laps driven using only throttle, brake, and steering by a test driver.
-- `node browser-check.cjs`: Windows/Edge browser checks covering all three cameras, DualSense and Xbox analog input, setup diagnostics, fullscreen circuit map, all fourteen renders, desktop/mobile controls, ghost persistence, qualifying, locked grids, and two-player racing. This uses local test ports 3100 and 9235 and saves screenshots under `artifacts/`.
+- `node browser-check.cjs`: Windows/Edge browser checks covering all four cameras, DualSense and Xbox analog input, setup diagnostics, fullscreen circuit map, all sixteen renders, desktop/mobile controls, ghost persistence, qualifying, locked grids, and two-player racing. This uses local test ports 3100 and 9235 and saves screenshots under `artifacts/`.
 
 This remains a casual game prototype. Persistent accounts, public matchmaking, production anti-abuse controls and multi-server room storage are outside this version.

@@ -4,7 +4,7 @@ const P=require('./public/physics');
 function place(p,s,now){const loc=P.at(s);p.x=loc.x;p.y=loc.y;p.angle=loc.angle;P.step(p,{},0,now);}
 function driveDistance(p,from,to,start=1000){for(let s=from;s<=to;s+=8)place(p,s,start+s*10);place(p,to,start+to*10);}
 test('all circuits are closed, separated, bounded, and have asphalt grids',()=>{
-  assert.deepEqual(Object.keys(P.tracks),['harbor','alpine','sunset','metro','emerald','thunder','zenith','aurora','sakura','marina','volcano','obsidian','titan','vesper']);
+  assert.deepEqual(Object.keys(P.tracks),['harbor','alpine','sunset','metro','emerald','thunder','zenith','aurora','sakura','marina','volcano','obsidian','titan','vesper','copper','lotus']);
   for(const [id,track] of Object.entries(P.tracks)){
     const a=P.at(0,id),b=P.at(track.length,id);assert.ok(Math.hypot(a.x-b.x,a.y-b.y)<.001,id+' closes');
     for(let i=0;i<8;i++){const p=P.spawn(i,id);assert.equal(p.trackId,id);assert.ok(P.nearest(p.x,p.y,id).distance<track.road/2);}
